@@ -63,6 +63,11 @@ def init_db():
             db.session.add(about_page)
             print('✓ Created About/Kontakt page')
         
+        # Initialize message templates
+        from app.services.messaging import init_default_templates
+        init_default_templates()
+        print('✓ Initialized message templates')
+        
         db.session.commit()
         print('\n✓ Database initialized successfully!')
         print('\nAdmin login credentials:')

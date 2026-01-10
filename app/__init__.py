@@ -48,6 +48,10 @@ def create_app(config_name='development'):
     app.register_blueprint(courses.bp)
     app.register_blueprint(art.bp)
     
+    # Register CLI commands
+    from app.cli import register_commands
+    register_commands(app)
+    
     # Create upload directories
     import os
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

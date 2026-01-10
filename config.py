@@ -42,6 +42,15 @@ class Config:
     # Admin settings
     ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@beatricegugger.ch')
     
+    # Twilio SMS settings
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+    TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')  # Your Twilio phone number
+    SMS_ENABLED = os.environ.get('SMS_ENABLED', 'False').lower() == 'true'
+    
+    # Email reply-to (where replies should go)
+    MAIL_REPLY_TO = os.environ.get('MAIL_REPLY_TO', 'info@beatricegugger.ch')
+    
     # Pagination
     ITEMS_PER_PAGE = int(os.environ.get('ITEMS_PER_PAGE', 10))
     

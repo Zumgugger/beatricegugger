@@ -13,7 +13,8 @@ from flask import (
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, limiter
-from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory, LocationMapping
+from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory, LocationMapping, MessageTemplate
+from app.services.messaging import send_promoted_message
 from werkzeug.utils import secure_filename
 import os
 from pathlib import Path
@@ -500,6 +501,47 @@ def api_delete_user(user_id):
     return jsonify({'success': True})
 
 
+@bp.route('/message_templates')
+@login_required
+def message_templates():
+    """Manage message templates."""
+    templates = MessageTemplate.query.order_by(
+        MessageTemplate.message_type,
+        MessageTemplate.trigger
+    ).all()
+    
+    trigger_labels = {
+        'registration_confirmed': 'Anmeldung bestätigt',
+        'registration_mixed': 'Teilweise Warteliste',
+        'registration_waitlist': 'Warteliste',
+        'promoted_from_waitlist': 'Von Warteliste angemeldet',
+        'reminder_1day': 'Erinnerung (1 Tag vorher)'
+    }
+    
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
+    return render_template('admin/message_templates.html', 
+                          templates=templates, 
+                          trigger_labels=trigger_labels,
+                          nav_items=nav_items)
+
+
+@bp.route('/api/message-template/<int:template_id>', methods=['PUT'])
+@login_required
+def api_update_message_template(template_id):
+    """Update a message template."""
+    template = MessageTemplate.query.get_or_404(template_id)
+    data = request.get_json()
+    
+    template.body = data.get('body', template.body)
+    template.is_active = data.get('is_active', template.is_active)
+    
+    if template.message_type == 'email':
+        template.subject = data.get('subject', template.subject)
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @bp.route('/')
 @login_required
 def dashboard():
@@ -665,6 +707,13 @@ def api_promote_registration(registration_id):
         # Promote entire registration
         registration.is_waitlist = False
         db.session.commit()
+        
+        # Send promotion notification
+        try:
+            send_promoted_message(registration)
+        except Exception as e:
+            logger.error(f"Error sending promotion notification: {e}")
+        
         return jsonify({'success': True, 'message': f'{num_participants} Person(en) angemeldet'})
     else:
         # Split the registration: promote available spots, keep rest on waitlist
@@ -682,6 +731,13 @@ def api_promote_registration(registration_id):
         )
         db.session.add(new_reg)
         db.session.commit()
+        
+        # Send promotion notification for the promoted registration
+        try:
+            send_promoted_message(new_reg)
+        except Exception as e:
+            logger.error(f"Error sending promotion notification: {e}")
+        
         return jsonify({'success': True, 'message': f'{spots_available} Person(en) angemeldet, {registration.num_participants} bleiben auf der Warteliste'})
 
 

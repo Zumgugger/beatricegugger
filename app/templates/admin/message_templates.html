@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Nachrichtenvorlagen - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="templates-page">
+    <div class="breadcrumb">
+        <a href="{{ url_for('public.index') }}">Home</a> &gt;
+        <span>Nachrichtenvorlagen</span>
+    </div>
+    
+    <h1>Nachrichtenvorlagen</h1>
+    <p class="page-description">Hier kannst du die SMS- und E-Mail-Texte bearbeiten. Verwende Platzhalter wie <code>{vorname}</code>, <code>{kurstitel}</code>, etc.</p>
+    
+    <div class="template-filters">
+        <button class="filter-btn active" data-filter="all">Alle</button>
+        <button class="filter-btn" data-filter="sms">SMS</button>
+        <button class="filter-btn" data-filter="email">E-Mail</button>
+    </div>
+    
+    <div class="available-variables">
+        <h3>Verfügbare Platzhalter:</h3>
+        <div class="variables-list">
+            <span class="variable">{vorname}</span>
+            <span class="variable">{name}</span>
+            <span class="variable">{kurstitel}</span>
+            <span class="variable">{datum}</span>
+            <span class="variable">{zeit}</span>
+            <span class="variable">{ort}</span>
+            <span class="variable">{ort_url}</span>
+            <span class="variable">{num_registered}</span>
+            <span class="variable">{num_waitlist}</span>
+        </div>
+    </div>
+    
+    <!-- Edit Template Form -->
+    <div id="edit-template-form" class="new-item-form" style="display: none;">
+        <h3>Vorlage bearbeiten</h3>
+        <form onsubmit="submitEditTemplate(event)">
+            <input type="hidden" name="template_id" id="edit_template_id">
+            <div class="form-group">
+                <label>Typ</label>
+                <input type="text" id="edit_type_display" readonly class="readonly-field">
+            </div>
+            <div class="form-group">
+                <label>Auslöser</label>
+                <input type="text" id="edit_trigger_display" readonly class="readonly-field">
+            </div>
+            <div class="form-group email-only" style="display: none;">
+                <label for="edit_subject">Betreff</label>
+                <input type="text" name="subject" id="edit_subject">
+            </div>
+            <div class="form-group">
+                <label for="edit_body">Nachricht *</label>
+                <textarea name="body" id="edit_body" rows="8" required></textarea>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="is_active" id="edit_is_active" checked>
+                    Aktiv
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn btn-secondary" onclick="hideEditTemplateForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="templates-list">
+        {% for template in templates %}
+        <div class="template-card {% if not template.is_active %}inactive{% endif %}" 
+             data-template-id="{{ template.id }}" 
+             data-type="{{ template.message_type }}">
+            <div class="template-header">
+                <span class="template-type {{ template.message_type }}">{{ 'SMS' if template.message_type == 'sms' else 'E-Mail' }}</span>
+                <span class="template-trigger">{{ trigger_labels.get(template.trigger, template.trigger) }}</span>
+                {% if not template.is_active %}
+                <span class="inactive-badge">Inaktiv</span>
+                {% endif %}
+            </div>
+            <div class="template-content">
+                {% if template.subject %}
+                <div class="template-subject"><strong>Betreff:</strong> {{ template.subject }}</div>
+                {% endif %}
+                <div class="template-body">{{ template.body[:200] }}{% if template.body|length > 200 %}...{% endif %}</div>
+            </div>
+            <div class="template-actions">
+                <button class="btn-icon btn-edit" onclick="editTemplate({{ template.id }}, '{{ template.message_type }}', '{{ template.trigger }}', '{{ template.subject|e if template.subject else '' }}', `{{ template.body|e }}`, {{ 'true' if template.is_active else 'false' }})" title="Vorlage bearbeiten">✏️</button>
+            </div>
+        </div>
+        {% else %}
+        <p class="no-items">Keine Vorlagen vorhanden.</p>
+        {% endfor %}
+    </div>
+    
+    <div class="page-actions">
+        <a href="{{ url_for('public.index') }}" class="btn btn-secondary">← Zurück zur Startseite</a>
+    </div>
+</div>
+
+<style>
+.templates-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.templates-page h1 {
+    margin-bottom: 10px;
+}
+
+.page-description {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.page-description code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.template-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 2px solid #8B4513;
+    background: white;
+    color: #8B4513;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Courier Prime', monospace;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    background: #8B4513;
+    color: white;
+}
+
+.available-variables {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+
+.available-variables h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+.variables-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.variable {
+    background: #e0e0e0;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.variable:hover {
+    background: #8B4513;
+    color: white;
+}
+
+.templates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.template-card {
+    padding: 15px 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border-left: 4px solid #8B4513;
+}
+
+.template-card.inactive {
+    opacity: 0.6;
+    border-left-color: #999;
+}
+
+.template-card[data-type="sms"] {
+    border-left-color: #28a745;
+}
+
+.template-card[data-type="email"] {
+    border-left-color: #007bff;
+}
+
+.template-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.template-type {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.template-type.sms {
+    background: #28a745;
+    color: white;
+}
+
+.template-type.email {
+    background: #007bff;
+    color: white;
+}
+
+.template-trigger {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.inactive-badge {
+    background: #dc3545;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-left: auto;
+}
+
+.template-content {
+    flex: 1;
+}
+
+.template-subject {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.template-body {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+.template-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.readonly-field {
+    background: #f0f0f0;
+    color: #666;
+    cursor: not-allowed;
+}
+
+#edit_body {
+    font-family: 'Courier Prime', monospace;
+    line-height: 1.5;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    width: auto;
+}
+
+.page-actions {
+    margin-top: 30px;
+}
+
+@media (max-width: 768px) {
+    .template-filters {
+        flex-wrap: wrap;
+    }
+    
+    .variables-list {
+        gap: 5px;
+    }
+    
+    .variable {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+    }
+}
+</style>
+
+<script>
+const triggerLabels = {
+    'registration_confirmed': 'Anmeldung bestätigt',
+    'registration_mixed': 'Teilweise Warteliste',
+    'registration_waitlist': 'Warteliste',
+    'promoted_from_waitlist': 'Von Warteliste angemeldet',
+    'reminder_1day': 'Erinnerung (1 Tag vorher)'
+};
+
+// Filter templates
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.template-card').forEach(card => {
+            if (filter === 'all' || card.dataset.type === filter) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Copy variable to clipboard on click
+document.querySelectorAll('.variable').forEach(v => {
+    v.addEventListener('click', () => {
+        navigator.clipboard.writeText(v.textContent);
+        const original = v.textContent;
+        v.textContent = '✓ Kopiert';
+        setTimeout(() => v.textContent = original, 1000);
+    });
+});
+
+function hideEditTemplateForm() {
+    document.getElementById('edit-template-form').style.display = 'none';
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.style.display = 'block';
+    });
+    // Re-apply filter
+    document.querySelector('.filter-btn.active').click();
+}
+
+function editTemplate(id, type, trigger, subject, body, isActive) {
+    // Hide card being edited
+    const card = document.querySelector(`[data-template-id="${id}"]`);
+    if (card) card.style.display = 'none';
+    
+    document.getElementById('edit-template-form').style.display = 'block';
+    document.getElementById('edit_template_id').value = id;
+    document.getElementById('edit_type_display').value = type === 'sms' ? 'SMS' : 'E-Mail';
+    document.getElementById('edit_trigger_display').value = triggerLabels[trigger] || trigger;
+    document.getElementById('edit_subject').value = subject;
+    document.getElementById('edit_body').value = body;
+    document.getElementById('edit_is_active').checked = isActive;
+    
+    // Show/hide subject field for email
+    const emailOnly = document.querySelector('.email-only');
+    emailOnly.style.display = type === 'email' ? 'block' : 'none';
+    
+    document.getElementById('edit_body').focus();
+}
+
+async function submitEditTemplate(event) {
+    event.preventDefault();
+    const form = event.target;
+    const templateId = document.getElementById('edit_template_id').value;
+    
+    const data = {
+        subject: form.subject.value,
+        body: form.body.value,
+        is_active: form.is_active.checked
+    };
+    
+    try {
+        const resp = await fetch(`/admin/api/message-template/${templateId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Fehler: ' + (result.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

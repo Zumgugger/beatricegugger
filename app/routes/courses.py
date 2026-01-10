@@ -6,6 +6,7 @@ from flask_login import current_user
 from app import db, mail, limiter
 from app.models import Course, CourseRegistration, NavigationItem, WorkshopCategory, Page
 from flask_mail import Message
+from app.services.messaging import send_registration_messages
 import os
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ def register(course_id):
     waitlist_count = num_participants - registered_count
     
     # Create registration for confirmed spots
+    registration = None
     if registered_count > 0:
         registration = CourseRegistration(
             course_id=course_id,
@@ -117,22 +119,9 @@ def register(course_id):
             is_waitlist=False
         )
         db.session.add(registration)
-        
-        # Send confirmation email if email provided
-        if email:
-            try:
-                send_confirmation_email(registration, course)
-                registration.confirmation_sent = True
-            except Exception as e:
-                logger.error(f"Error sending confirmation email: {e}")
-        
-        # Notify admin
-        try:
-            notify_admin_registration(registration, course)
-        except Exception as e:
-            logger.error(f"Error notifying admin: {e}")
     
     # Create waitlist entry if overflow
+    waitlist_registration = None
     if waitlist_count > 0:
         waitlist_registration = CourseRegistration(
             course_id=course_id,
@@ -144,14 +133,37 @@ def register(course_id):
             is_waitlist=True
         )
         db.session.add(waitlist_registration)
-        
-        # Notify admin about waitlist
-        try:
-            notify_admin_registration(waitlist_registration, course)
-        except Exception as e:
-            logger.error(f"Error notifying admin: {e}")
     
     db.session.commit()
+    
+    # Send notifications via messaging service
+    try:
+        if waitlist_count > 0 and registered_count > 0:
+            # Mixed: some registered, some on waitlist
+            send_registration_messages(
+                registration=registration,
+                status='mixed',
+                num_registered=registered_count,
+                num_waitlist=waitlist_count
+            )
+        elif waitlist_count > 0:
+            # All on waitlist
+            send_registration_messages(
+                registration=waitlist_registration,
+                status='waitlist'
+            )
+        else:
+            # All registered
+            send_registration_messages(
+                registration=registration,
+                status='confirmed',
+                num_registered=registered_count
+            )
+        
+        # Notify admin
+        notify_admin_registration(registration or waitlist_registration, course)
+    except Exception as e:
+        logger.error(f"Error sending notifications: {e}")
     
     # Redirect to appropriate success page
     if waitlist_count > 0 and registered_count > 0:

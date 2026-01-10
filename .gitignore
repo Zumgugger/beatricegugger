@@ -47,3 +47,6 @@ htmlcov/
 # Docker
 *.env.local
 backups/
+
+# Sensitive credentials
+docs/twilio*/

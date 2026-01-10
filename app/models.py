@@ -213,3 +213,121 @@ class SiteSettings(db.Model):
     
     def __repr__(self):
         return f'<SiteSetting {self.key}>'
+
+
+class MessageTemplate(db.Model):
+    """Email and SMS message templates."""
+    __tablename__ = 'message_templates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Template identification
+    message_type = db.Column(db.String(10), nullable=False)  # 'sms' or 'email'
+    trigger = db.Column(db.String(50), nullable=False)  # e.g., 'registration_confirmed', 'registration_waitlist', 'reminder_1day', 'promoted_from_waitlist'
+    
+    # Template content
+    subject = db.Column(db.String(255))  # For emails only
+    body = db.Column(db.Text, nullable=False)
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Audit
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Unique constraint: one template per type+trigger combination
+    __table_args__ = (db.UniqueConstraint('message_type', 'trigger', name='uq_message_template'),)
+    
+    def __repr__(self):
+        return f'<MessageTemplate {self.message_type}:{self.trigger}>'
+    
+    def render(self, **context):
+        """Render template with context variables.
+        
+        Available variables:
+        - {vorname}, {name}, {telefonnummer}, {email}
+        - {kurstitel}, {datum}, {zeit}, {ort}, {ort_url}
+        - {num_registered}, {num_waitlist}
+        """
+        text = self.body
+        for key, value in context.items():
+            text = text.replace('{' + key + '}', str(value) if value else '')
+        return text
+    
+    def render_subject(self, **context):
+        """Render email subject with context variables."""
+        if not self.subject:
+            return ''
+        text = self.subject
+        for key, value in context.items():
+            text = text.replace('{' + key + '}', str(value) if value else '')
+        return text
+
+
+class MessageLog(db.Model):
+    """Log of sent messages for tracking and debugging."""
+    __tablename__ = 'message_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Message details
+    message_type = db.Column(db.String(10), nullable=False)  # 'sms' or 'email'
+    trigger = db.Column(db.String(50), nullable=False)
+    recipient = db.Column(db.String(255), nullable=False)  # Phone or email
+    subject = db.Column(db.String(255))  # For emails
+    body = db.Column(db.Text, nullable=False)
+    
+    # Related entities
+    registration_id = db.Column(db.Integer, db.ForeignKey('course_registrations.id'), nullable=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=True)
+    
+    # Status
+    status = db.Column(db.String(20), default='sent')  # sent, failed, pending
+    error_message = db.Column(db.Text)
+    external_id = db.Column(db.String(100))  # Twilio SID or email message ID
+    
+    # Timestamps
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    registration = db.relationship('CourseRegistration', backref='messages')
+    course = db.relationship('Course', backref='messages')
+    
+    def __repr__(self):
+        return f'<MessageLog {self.message_type} to {self.recipient}>'
+
+
+class ScheduledMessage(db.Model):
+    """Scheduled messages (e.g., SMS reminders)."""
+    __tablename__ = 'scheduled_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Message details
+    message_type = db.Column(db.String(10), nullable=False)  # 'sms' or 'email'
+    trigger = db.Column(db.String(50), nullable=False)  # e.g., 'reminder_1day'
+    recipient = db.Column(db.String(255), nullable=False)
+    
+    # Related entities
+    registration_id = db.Column(db.Integer, db.ForeignKey('course_registrations.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    
+    # Scheduling
+    scheduled_for = db.Column(db.DateTime, nullable=False)
+    
+    # Status
+    status = db.Column(db.String(20), default='pending')  # pending, sent, cancelled, failed
+    sent_at = db.Column(db.DateTime)
+    error_message = db.Column(db.Text)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    registration = db.relationship('CourseRegistration', backref='scheduled_messages')
+    course = db.relationship('Course', backref='scheduled_messages')
+    
+    def __repr__(self):
+        return f'<ScheduledMessage {self.trigger} for {self.scheduled_for}>'
+
