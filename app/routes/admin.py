@@ -412,6 +412,94 @@ def logout():
     return redirect(url_for('public.index'))
 
 
+@bp.route('/admin_users')
+@login_required
+def admin_users():
+    """Manage admin users."""
+    users = User.query.order_by(User.created_at.desc()).all()
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
+    return render_template('admin/users.html', users=users, nav_items=nav_items)
+
+
+@bp.route('/api/user', methods=['POST'])
+@login_required
+def api_create_user():
+    """Create a new admin user."""
+    data = request.get_json()
+    
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '')
+    
+    if not name or not email or not password:
+        return jsonify({'success': False, 'error': 'Alle Felder sind erforderlich'}), 400
+    
+    if len(password) < 6:
+        return jsonify({'success': False, 'error': 'Passwort muss mindestens 6 Zeichen lang sein'}), 400
+    
+    if not validate_email(email):
+        return jsonify({'success': False, 'error': 'Ungültige E-Mail-Adresse'}), 400
+    
+    # Check if email already exists
+    if User.query.filter_by(email=email).first():
+        return jsonify({'success': False, 'error': 'E-Mail-Adresse bereits vergeben'}), 400
+    
+    user = User(name=name, email=email)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'user_id': user.id})
+
+
+@bp.route('/api/user/<int:user_id>', methods=['PUT'])
+@login_required
+def api_update_user(user_id):
+    """Update an admin user."""
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '')
+    
+    if not name or not email:
+        return jsonify({'success': False, 'error': 'Name und E-Mail sind erforderlich'}), 400
+    
+    if not validate_email(email):
+        return jsonify({'success': False, 'error': 'Ungültige E-Mail-Adresse'}), 400
+    
+    # Check if email already exists for another user
+    existing = User.query.filter_by(email=email).first()
+    if existing and existing.id != user_id:
+        return jsonify({'success': False, 'error': 'E-Mail-Adresse bereits vergeben'}), 400
+    
+    user.name = name
+    user.email = email
+    
+    if password:
+        if len(password) < 6:
+            return jsonify({'success': False, 'error': 'Passwort muss mindestens 6 Zeichen lang sein'}), 400
+        user.set_password(password)
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@bp.route('/api/user/<int:user_id>', methods=['DELETE'])
+@login_required
+def api_delete_user(user_id):
+    """Delete an admin user."""
+    # Prevent self-deletion
+    if user_id == current_user.id:
+        return jsonify({'success': False, 'error': 'Du kannst dich nicht selbst löschen'}), 400
+    
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @bp.route('/')
 @login_required
 def dashboard():

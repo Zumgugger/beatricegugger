@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Admin-Benutzer verwalten - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="admin-users-page">
+    <div class="breadcrumb">
+        <a href="{{ url_for('public.index') }}">Home</a> &gt;
+        <span>Admin-Benutzer</span>
+    </div>
+    
+    <h1>Admin-Benutzer verwalten</h1>
+    
+    <div class="users-summary">
+        <span class="count">{{ users|length }} {{ 'Benutzer' if users|length == 1 else 'Benutzer' }}</span>
+        <button class="btn-admin btn-admin-add" onclick="showAddUserForm()" title="Benutzer hinzufügen" style="margin-left: auto;">+</button>
+    </div>
+    
+    <!-- Add User Form -->
+    <div id="add-user-form" class="new-item-form" style="display: none;">
+        <h3>Neuer Admin-Benutzer</h3>
+        <form onsubmit="submitAddUser(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="add_name">Name *</label>
+                    <input type="text" name="name" id="add_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="add_email">E-Mail *</label>
+                    <input type="email" name="email" id="add_email" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="add_password">Passwort *</label>
+                    <input type="password" name="password" id="add_password" required minlength="6">
+                    <small class="form-hint">Mindestens 6 Zeichen</small>
+                </div>
+                <div class="form-group">
+                    <label for="add_password_confirm">Passwort bestätigen *</label>
+                    <input type="password" name="password_confirm" id="add_password_confirm" required>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                <button type="button" class="btn btn-secondary" onclick="hideAddUserForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Edit User Form -->
+    <div id="edit-user-form" class="new-item-form" style="display: none;">
+        <h3>Benutzer bearbeiten</h3>
+        <form onsubmit="submitEditUser(event)">
+            <input type="hidden" name="user_id" id="edit_user_id">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_name">Name *</label>
+                    <input type="text" name="name" id="edit_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_email">E-Mail *</label>
+                    <input type="email" name="email" id="edit_email" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_password">Neues Passwort (leer lassen um beizubehalten)</label>
+                    <input type="password" name="password" id="edit_password" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="edit_password_confirm">Passwort bestätigen</label>
+                    <input type="password" name="password_confirm" id="edit_password_confirm">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn btn-secondary" onclick="hideEditUserForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="users-list">
+        {% for user in users %}
+        <div class="user-card" data-user-id="{{ user.id }}">
+            <div class="user-info">
+                <div class="user-name">
+                    {{ user.name }}
+                    {% if user.id == current_user.id %}<span class="current-user-badge">Du</span>{% endif %}
+                </div>
+                <div class="user-email">✉️ {{ user.email }}</div>
+                <div class="user-meta">
+                    <span>Erstellt: {{ user.created_at.strftime('%d.%m.%Y') }}</span>
+                    {% if user.last_login %}
+                    <span>Letzter Login: {{ user.last_login.strftime('%d.%m.%Y %H:%M') }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="user-actions">
+                <button class="btn-icon btn-edit" onclick="editUser({{ user.id }}, '{{ user.name }}', '{{ user.email }}')" title="Benutzer bearbeiten">✏️</button>
+                {% if user.id != current_user.id %}
+                <button class="btn-icon btn-delete" onclick="deleteUser({{ user.id }}, '{{ user.name }}')" title="Benutzer löschen">🗑️</button>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p class="no-items">Keine Benutzer vorhanden.</p>
+        {% endfor %}
+    </div>
+    
+    <div class="page-actions">
+        <a href="{{ url_for('public.index') }}" class="btn btn-secondary">← Zurück zur Startseite</a>
+    </div>
+</div>
+
+<style>
+.admin-users-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-users-page h1 {
+    margin-bottom: 20px;
+}
+
+.users-summary {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 15px;
+    background: rgba(139, 69, 19, 0.1);
+    border-radius: 8px;
+}
+
+.users-summary .count {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.user-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border-left: 4px solid #8B4513;
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.current-user-badge {
+    background: #8B4513;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.user-email {
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.user-meta {
+    font-size: 0.85rem;
+    color: #888;
+    display: flex;
+    gap: 20px;
+}
+
+.user-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.page-actions {
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .user-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .user-meta {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .user-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+</style>
+
+<script>
+function showAddUserForm() {
+    document.getElementById('add-user-form').style.display = 'block';
+    document.getElementById('edit-user-form').style.display = 'none';
+    document.getElementById('add_name').focus();
+}
+
+function hideAddUserForm() {
+    document.getElementById('add-user-form').style.display = 'none';
+}
+
+function hideEditUserForm() {
+    document.getElementById('edit-user-form').style.display = 'none';
+    document.querySelectorAll('.user-card').forEach(card => {
+        card.style.display = 'flex';
+    });
+}
+
+function editUser(id, name, email) {
+    document.querySelectorAll('.user-card').forEach(card => {
+        card.style.display = 'flex';
+    });
+    const cardToHide = document.querySelector(`[data-user-id="${id}"]`);
+    if (cardToHide) {
+        cardToHide.style.display = 'none';
+    }
+    
+    document.getElementById('add-user-form').style.display = 'none';
+    document.getElementById('edit-user-form').style.display = 'block';
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_password').value = '';
+    document.getElementById('edit_password_confirm').value = '';
+    document.getElementById('edit_name').focus();
+}
+
+async function submitAddUser(event) {
+    event.preventDefault();
+    const form = event.target;
+    
+    if (form.password.value !== form.password_confirm.value) {
+        alert('Passwörter stimmen nicht überein');
+        return;
+    }
+    
+    if (form.password.value.length < 6) {
+        alert('Passwort muss mindestens 6 Zeichen lang sein');
+        return;
+    }
+    
+    const data = {
+        name: form.name.value,
+        email: form.email.value,
+        password: form.password.value
+    };
+    
+    try {
+        const resp = await fetch('/admin/api/user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Fehler: ' + (result.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler: ' + e.message);
+    }
+}
+
+async function submitEditUser(event) {
+    event.preventDefault();
+    const form = event.target;
+    const userId = document.getElementById('edit_user_id').value;
+    
+    if (form.password.value && form.password.value !== form.password_confirm.value) {
+        alert('Passwörter stimmen nicht überein');
+        return;
+    }
+    
+    if (form.password.value && form.password.value.length < 6) {
+        alert('Passwort muss mindestens 6 Zeichen lang sein');
+        return;
+    }
+    
+    const data = {
+        name: form.name.value,
+        email: form.email.value
+    };
+    
+    if (form.password.value) {
+        data.password = form.password.value;
+    }
+    
+    try {
+        const resp = await fetch(`/admin/api/user/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Fehler: ' + (result.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler: ' + e.message);
+    }
+}
+
+async function deleteUser(userId, name) {
+    if (!confirm(`Benutzer "${name}" wirklich löschen?`)) {
+        return;
+    }
+    
+    try {
+        const resp = await fetch(`/admin/api/user/${userId}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            document.querySelector(`[data-user-id="${userId}"]`).remove();
+            const countEl = document.querySelector('.users-summary .count');
+            const currentCount = document.querySelectorAll('.user-card').length;
+            countEl.textContent = `${currentCount} Benutzer`;
+        } else {
+            alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler: ' + e.message);
+    }
+}
+</script>
+{% endblock %}
