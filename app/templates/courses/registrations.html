@@ -17,7 +17,7 @@
     {% endif %}
     
     <div class="registrations-summary">
-        <span class="count">{{ course.registration_count }} Platz{% if course.registration_count != 1 %}̈e{% endif %} belegt</span>
+        <span class="count">{{ course.registration_count }} {{ 'Platz' if course.registration_count == 1 else 'Plätze' }} belegt</span>
         {% if course.max_participants %}
         <span class="capacity">von {{ course.max_participants }}</span>
         {% endif %}

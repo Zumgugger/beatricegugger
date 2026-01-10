@@ -21,7 +21,7 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 mail = Mail()
-limiter = Limiter(key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
+limiter = Limiter(key_func=get_remote_address, default_limits=["1000 per day", "200 per hour"])
 
 
 def create_app(config_name='development'):
@@ -56,8 +56,9 @@ def create_app(config_name='development'):
     os.makedirs(app.config['UPLOAD_FOLDER'] / 'pages', exist_ok=True)
     os.makedirs(app.config['UPLOAD_FOLDER'] / 'navigation', exist_ok=True)
 
-    # Serve uploaded files
+    # Serve uploaded files (exempt from rate limiting)
     @app.route('/uploads/<path:filename>')
+    @limiter.exempt
     def uploaded_file(filename):
         import os
         from pathlib import Path
@@ -67,8 +68,9 @@ def create_app(config_name='development'):
             upload_folder = Path(app.root_path).parent / upload_folder
         return send_from_directory(str(upload_folder), filename)
     
-    # Health check endpoint for production monitoring
+    # Health check endpoint for production monitoring (exempt from rate limiting)
     @app.route('/health')
+    @limiter.exempt
     def health_check():
         try:
             # Test database connection
