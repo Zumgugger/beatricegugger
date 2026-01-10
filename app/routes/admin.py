@@ -515,7 +515,8 @@ def message_templates():
         'registration_mixed': 'Teilweise Warteliste',
         'registration_waitlist': 'Warteliste',
         'promoted_from_waitlist': 'Von Warteliste angemeldet',
-        'reminder_1day': 'Erinnerung (1 Tag vorher)'
+        'reminder_1day': 'Erinnerung (1 Tag vorher)',
+        'admin_new_registration': 'Admin-Benachrichtigung (neue Anmeldung)'
     }
     
     nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
@@ -680,7 +681,10 @@ def course_registrations(course_id):
 @login_required
 def api_delete_registration(registration_id):
     """Delete a registration."""
+    from app.models import ScheduledMessage
     registration = CourseRegistration.query.get_or_404(registration_id)
+    # Delete any scheduled messages for this registration first
+    ScheduledMessage.query.filter_by(registration_id=registration_id).delete()
     db.session.delete(registration)
     db.session.commit()
     return jsonify({'success': True})

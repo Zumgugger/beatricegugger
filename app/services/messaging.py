@@ -295,6 +295,34 @@ def send_registration_messages(
     # Schedule reminder SMS (only for confirmed registrations)
     if status in ('confirmed', 'mixed') and not registration.is_waitlist:
         schedule_reminder_sms(registration)
+    
+    # Send admin notification SMS
+    send_admin_notification(registration)
+
+
+def send_admin_notification(registration: CourseRegistration):
+    """Send SMS notification to admin when someone registers."""
+    trigger = 'admin_new_registration'
+    admin_phone = current_app.config.get('ADMIN_PHONE', '+41797134974')
+    
+    # Get template
+    sms_template = get_template('sms', trigger)
+    if not sms_template:
+        logger.warning(f"No SMS template found for trigger: {trigger}")
+        return
+    
+    # Build context
+    context = build_context(registration)
+    body = sms_template.render(**context)
+    
+    # Send SMS to admin
+    send_sms(
+        recipient=admin_phone,
+        body=body,
+        registration_id=registration.id,
+        course_id=registration.course_id,
+        trigger=trigger
+    )
 
 
 def send_promoted_message(registration: CourseRegistration):
@@ -493,6 +521,11 @@ def init_default_templates():
             'message_type': 'sms',
             'trigger': 'reminder_1day',
             'body': 'Juhu, morgen um {zeit} findet der Kurs {kurstitel} statt. {ort_url}'
+        },
+        {
+            'message_type': 'sms',
+            'trigger': 'admin_new_registration',
+            'body': '{num_participants} Person(en) hat/haben sich für den {kurstitel} vom {datum} angemeldet.'
         },
         
         # Email Templates

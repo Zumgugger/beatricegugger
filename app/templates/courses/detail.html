@@ -4,6 +4,10 @@
 
 {% block content %}
 <div class="course-detail">
+    <a href="{{ url_for('courses.category', category_id=course.category_id) }}" class="back-link">
+        <img src="{{ url_for('static', filename='images/Pfeil_links.png') }}" alt="Zurück" class="back-arrow">
+    </a>
+    
     <h1 class="editable-text" data-entity="course" data-entity-id="{{ course.id }}" data-field="title" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">{{ course.title }}</h1>
     
     {% if course.image_path %}
@@ -12,9 +16,11 @@
     </div>
     {% endif %}
     
+    {% if course.description %}
     <div class="course-description editable-text" data-entity="course" data-entity-id="{{ course.id }}" data-field="content" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">
         {{ course.description|safe }}
     </div>
+    {% endif %}
     
     <div class="course-meta">
         {% if course.date %}
@@ -62,14 +68,12 @@
             </div>
             
             <div class="form-group">
-                <label for="telefonnummer">Telefonnummer *</label>
-                <input type="tel" id="telefonnummer" name="telefonnummer" required 
-                       placeholder="z.B. +41 79 123 45 67">
-                <small class="form-hint">Schweizer oder internationale Nummer</small>
+                <label for="telefonnummer">Telefonnummer (für Bestätigung) *</label>
+                <input type="tel" id="telefonnummer" name="telefonnummer" required>
             </div>
             
             <div class="form-group">
-                <label for="email">E-Mail (optional, für Bestätigung)</label>
+                <label for="email">E-Mail (optional)</label>
                 <input type="email" id="email" name="email">
             </div>
             
@@ -80,6 +84,18 @@
     </div>
     
     <style>
+    .back-link {
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+    .back-arrow {
+        width: 50px;
+        height: auto;
+        transition: transform 0.2s ease;
+    }
+    .back-link:hover .back-arrow {
+        transform: translateX(-5px);
+    }
     .participant-selector {
         margin-bottom: 20px;
     }
@@ -95,16 +111,24 @@
         font-size: 1.2rem;
         font-weight: bold;
         padding: 8px;
-        border: 1px solid #ccc;
+        border: 1px solid #333;
         border-radius: 4px;
-        background: #fff;
+        background: transparent;
+        -webkit-appearance: textfield;
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+    .number-input input::-webkit-inner-spin-button,
+    .number-input input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
     }
     .num-btn {
         width: 36px;
         height: 36px;
-        border: 1px solid #ccc;
+        border: 1px solid #333;
         border-radius: 4px;
-        background: #f5f5f5;
+        background: transparent;
         cursor: pointer;
         font-size: 0.9rem;
         display: flex;

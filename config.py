@@ -48,6 +48,9 @@ class Config:
     TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')  # Your Twilio phone number
     SMS_ENABLED = os.environ.get('SMS_ENABLED', 'False').lower() == 'true'
     
+    # Admin phone for notifications
+    ADMIN_PHONE = os.environ.get('ADMIN_PHONE', '+41797134974')
+    
     # Email reply-to (where replies should go)
     MAIL_REPLY_TO = os.environ.get('MAIL_REPLY_TO', 'info@beatricegugger.ch')
     

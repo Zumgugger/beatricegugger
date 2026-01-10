@@ -434,11 +434,7 @@ async function deleteRegistration(registrationId, name) {
         const resp = await fetch(`/admin/api/registration/${registrationId}`, { method: 'DELETE' });
         const data = await resp.json();
         if (data.success) {
-            document.querySelector(`[data-registration-id="${registrationId}"]`).remove();
-            // Update count
-            const countEl = document.querySelector('.registrations-summary .count');
-            const currentCount = document.querySelectorAll('.registration-card').length;
-            countEl.textContent = `${currentCount} Anmeldung${currentCount !== 1 ? 'en' : ''}`;
+            location.reload();
         } else {
             alert('Fehler beim Löschen: ' + (data.error || 'Unbekannter Fehler'));
         }

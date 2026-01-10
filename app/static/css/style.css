@@ -1002,10 +1002,11 @@ body.homepage .footer {
 .form-group textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid #333;
     border-radius: 4px;
     font-size: 1rem;
     font-family: 'Courier Prime', monospace;
+    background: transparent;
 }
 
 .form-hint {
@@ -1334,9 +1335,10 @@ body.homepage .footer {
 .form-group textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid #333;
     border-radius: 5px;
     font-size: 16px;
+    background: transparent;
 }
 
 .form-group.checkbox label {
