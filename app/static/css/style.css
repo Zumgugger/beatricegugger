@@ -25,7 +25,7 @@ a img,
 .workshop-category-card img,
 .nav-icon img,
 button img {
-    cursor: url('../images/Zeigefinger%20oben.png') 16 0, pointer;
+    cursor: url('../images/Zeigefinger_cursor.png') 16 0, pointer;
 }
 
 .admin-status-bar {
@@ -347,6 +347,25 @@ body.homepage .footer {
         max-height: 200px;
         width: 100%;
     }
+    
+    /* Art categories mobile */
+    .art-page {
+        padding: 20px 10px;
+    }
+    
+    .categories-grid {
+        flex-direction: column;
+        align-items: center;
+        gap: 25px;
+        width: 100%;
+    }
+    
+    .category-card {
+        width: 80vw !important;
+        max-width: 300px !important;
+        min-width: auto !important;
+        margin: 0 auto;
+    }
 }
 
 /* Content */
@@ -477,10 +496,59 @@ body.homepage .footer {
     display: block;
 }
 
+/* Art Page Styling */
+.art-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px 40px;
+}
+
+.art-page h1 {
+    text-align: center;
+}
+
+.categories-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin-top: 30px;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px 0;
+}
+
+.category-card {
+    width: calc(50% - 40px);
+    max-width: 280px;
+    min-width: 200px;
+    position: relative;
+    text-align: center;
+}
+
 /* Art page category images - show full picture */
 .categories-grid .category-image img {
+    height: auto;
+    width: 100%;
     max-height: 300px;
     object-fit: contain;
+}
+
+.category-info {
+    padding: 10px 0;
+}
+
+.category-info h2 {
+    margin: 0 0 5px 0;
+    font-size: 1.2rem;
+}
+
+.category-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
 }
 
 .category-title {
@@ -580,16 +648,20 @@ body.homepage .footer {
 
 .breadcrumb {
     margin-bottom: 20px;
-    font-size: 0.9rem;
 }
 
 .breadcrumb a {
-    color: #8B4513;
-    text-decoration: none;
+    display: inline-block;
 }
 
-.breadcrumb a:hover {
-    text-decoration: underline;
+.breadcrumb .back-arrow {
+    height: 40px;
+    width: auto;
+    transition: transform 0.2s;
+}
+
+.breadcrumb .back-arrow:hover {
+    transform: scale(1.1);
 }
 
 .category-header {

@@ -4,6 +4,12 @@
 
 {% block content %}
 <div class="gallery-page">
+    <div class="breadcrumb">
+        <a href="{{ url_for('art.index') }}" title="Zurück zu Art">
+            <img src="{{ url_for('static', filename='images/Pfeil links.png') }}" alt="Zurück" class="back-arrow">
+        </a>
+    </div>
+    
     <h1>{{ category.title }}</h1>
     
     {% if category.description %}

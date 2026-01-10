@@ -10,15 +10,23 @@
             <h1>Kontakt</h1>
             
             <div class="kontakt-content">
+                {% if current_user.is_authenticated %}
                 <div class="kontakt-image editable-image" data-entity="page" data-entity-id="{{ page.id }}" data-field="image" style="cursor: pointer;">
                     {% if page.image_path %}
                         <img src="{{ url_for('uploaded_file', filename=page.image_path) }}" alt="Kontakt Bild">
-                    {% elif current_user.is_authenticated %}
+                    {% else %}
                         <div class="image-placeholder">
                             Klicken Sie hier, um ein Bild hinzuzufügen
                         </div>
                     {% endif %}
                 </div>
+                {% else %}
+                <div class="kontakt-image">
+                    {% if page.image_path %}
+                        <img src="{{ url_for('uploaded_file', filename=page.image_path) }}" alt="Kontakt Bild">
+                    {% endif %}
+                </div>
+                {% endif %}
                 
                 <div class="kontakt-links">
                     <a href="mailto:beatricegugger@hotmail.com" class="contact-item">

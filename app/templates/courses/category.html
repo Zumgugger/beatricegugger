@@ -5,8 +5,9 @@
 {% block content %}
 <div class="workshop-category-page">
     <div class="breadcrumb">
-        <a href="{{ url_for('courses.index') }}">Angebot</a> &gt;
-        <span>{{ category.title }}</span>
+        <a href="{{ url_for('courses.index') }}" title="Zurück zu den Angeboten">
+            <img src="{{ url_for('static', filename='images/Pfeil links.png') }}" alt="Zurück" class="back-arrow">
+        </a>
     </div>
     
     <!-- Category Header with Image -->
