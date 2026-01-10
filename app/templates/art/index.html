@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Art - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="art-page">
+    <h1>Art</h1>
+    
+    <div class="categories-grid">
+        {% for category in categories %}
+        <div class="category-card">
+            {% if category.featured_image_path %}
+            <div class="category-image">
+                <img src="{{ url_for('static', filename='../' ~ category.featured_image_path) }}" alt="{{ category.title }}">
+            </div>
+            {% endif %}
+            
+            <div class="category-info">
+                <h2>{{ category.title }}</h2>
+                <p>{{ category.description }}</p>
+                <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="btn btn-primary">Galerie ansehen</a>
+            </div>
+        </div>
+        {% else %}
+        <p>Derzeit keine Kategorien verfügbar.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

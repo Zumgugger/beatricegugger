@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.title }} - Art - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="gallery-page">
+    <h1>{{ category.title }}</h1>
+    
+    {% if category.description %}
+    <p class="gallery-description">{{ category.description }}</p>
+    {% endif %}
+    
+    <div class="gallery-container">
+        {% if images %}
+        <div class="gallery-viewer">
+            <button class="gallery-nav prev" id="prevBtn" aria-label="Vorheriges Bild">❮</button>
+            
+            <div class="gallery-images">
+                {% for image in images %}
+                <div class="gallery-image {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+                    <img src="{{ url_for('static', filename='../' ~ image.image_path) }}" alt="{{ image.caption or category.title }}">
+                    {% if image.caption %}
+                    <p class="image-caption">{{ image.caption }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <button class="gallery-nav next" id="nextBtn" aria-label="Nächstes Bild">❯</button>
+        </div>
+        
+        <div class="gallery-counter">
+            <span id="currentImage">1</span> / <span id="totalImages">{{ images|length }}</span>
+        </div>
+        {% else %}
+        <p>Keine Bilder in dieser Kategorie.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
+{% endblock %}

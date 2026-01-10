@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} - Beatrice Gugger</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Blumen Icon 32x32.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="admin-panel">
+    <div class="admin-wrapper">
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='images/Blumen Icon 256x256.png') }}" alt="Logo">
+                <h2>Admin</h2>
+            </div>
+            
+            <ul class="admin-menu">
+                <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('admin.courses') }}">Kurse</a></li>
+                <li><a href="{{ url_for('admin.art') }}">Art Galerie</a></li>
+                <li><a href="{{ url_for('admin.pages') }}">Seiten</a></li>
+                <li><a href="{{ url_for('admin.navigation') }}">Navigation</a></li>
+                <li><a href="{{ url_for('admin.logout') }}">Abmelden</a></li>
+            </ul>
+        </nav>
+        
+        <main class="admin-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            {% block admin_content %}{% endblock %}
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

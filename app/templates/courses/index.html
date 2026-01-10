@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Angebot - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="courses-page">
+    <h1>Angebot</h1>
+    
+    <div class="courses-grid">
+        {% for course in courses %}
+        <div class="course-card">
+            {% if course.image_path %}
+            <div class="course-image">
+                <img src="{{ url_for('static', filename='../' ~ course.image_path) }}" alt="{{ course.title }}">
+            </div>
+            {% endif %}
+            
+            <div class="course-info">
+                <h2>{{ course.title }}</h2>
+                <p>{{ course.description[:150] }}{% if course.description|length > 150 %}...{% endif %}</p>
+                
+                {% if course.date %}
+                <p class="course-date">Datum: {{ course.date.strftime('%d.%m.%Y %H:%M') }}</p>
+                {% endif %}
+                
+                <a href="{{ url_for('courses.detail', course_id=course.id) }}" class="btn btn-primary">Mehr erfahren</a>
+            </div>
+        </div>
+        {% else %}
+        <p>Derzeit keine Kurse verfügbar.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

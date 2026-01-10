@@ -1,0 +1,31 @@
+# Core Flask
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Database
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+
+# Authentication & Security
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+WTForms==3.1.1
+email-validator==2.1.0
+
+# Password hashing
+bcrypt==4.1.2
+
+# Email
+Flask-Mail==0.9.1
+
+# Image handling
+Pillow==10.1.0
+
+# Date/Time
+python-dateutil==2.8.2
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Development
+Flask-DebugToolbar==0.14.1

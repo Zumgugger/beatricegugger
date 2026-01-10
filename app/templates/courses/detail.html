@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="course-detail">
+    <h1>{{ course.title }}</h1>
+    
+    {% if course.image_path %}
+    <div class="course-image">
+        <img src="{{ url_for('static', filename='../' ~ course.image_path) }}" alt="{{ course.title }}">
+    </div>
+    {% endif %}
+    
+    <div class="course-description">
+        {{ course.description|safe }}
+    </div>
+    
+    <div class="course-meta">
+        {% if course.date %}
+        <p><strong>Datum:</strong> {{ course.date.strftime('%d.%m.%Y %H:%M') }}</p>
+        {% endif %}
+        
+        {% if course.location %}
+        <p><strong>Ort:</strong> {{ course.location }}</p>
+        {% endif %}
+        
+        {% if course.max_participants %}
+        <p><strong>Teilnehmer:</strong> {{ course.registration_count }} / {{ course.max_participants }}</p>
+        {% endif %}
+    </div>
+    
+    {% if course.is_full %}
+    <div class="alert alert-warning">
+        <p>Dieser Kurs ist bereits voll.</p>
+    </div>
+    {% else %}
+    <div class="registration-form">
+        <h2>Anmeldung</h2>
+        <form method="POST" action="{{ url_for('courses.register', course_id=course.id) }}">
+            <div class="form-group">
+                <label for="vorname">Vorname *</label>
+                <input type="text" id="vorname" name="vorname" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="name">Name *</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="telefonnummer">Telefonnummer *</label>
+                <input type="tel" id="telefonnummer" name="telefonnummer" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">E-Mail (optional, für Bestätigung)</label>
+                <input type="email" id="email" name="email">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Jetzt anmelden</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

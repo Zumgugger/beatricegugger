@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard - Admin{% endblock %}
+
+{% block admin_content %}
+<h1>Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Aktive Kurse</h3>
+        <p class="stat-number">{{ active_courses }}</p>
+    </div>
+    
+    <div class="stat-card">
+        <h3>Total Kurse</h3>
+        <p class="stat-number">{{ total_courses }}</p>
+    </div>
+    
+    <div class="stat-card">
+        <h3>Anmeldungen</h3>
+        <p class="stat-number">{{ total_registrations }}</p>
+    </div>
+</div>
+
+<div class="recent-registrations">
+    <h2>Neueste Anmeldungen</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Name</th>
+                <th>Kurs</th>
+                <th>Telefon</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reg in recent_registrations %}
+            <tr>
+                <td>{{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td>{{ reg.vorname }} {{ reg.name }}</td>
+                <td>{{ reg.course.title }}</td>
+                <td>{{ reg.telefonnummer }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">Keine Anmeldungen vorhanden.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
