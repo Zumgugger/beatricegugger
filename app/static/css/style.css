@@ -16,6 +16,18 @@ body {
     background-position: center;
 }
 
+/* Custom cursor for clickable images */
+a img,
+.category-link img,
+.category-image img,
+.gallery-nav img,
+.editable-image img,
+.workshop-category-card img,
+.nav-icon img,
+button img {
+    cursor: url('../images/Zeigefinger%20oben.png') 16 0, pointer;
+}
+
 .admin-status-bar {
     position: sticky;
     top: 0;
@@ -180,22 +192,28 @@ body.homepage .footer {
 
 .homepage-nav {
     width: 100%;
-    max-width: 800px;
+    max-width: 700px;
 }
 
 .homepage-nav-menu {
     list-style: none;
     display: flex;
     justify-content: center;
-    gap: 30px;
+    gap: 40px;
     flex-wrap: wrap;
+}
+
+.homepage-nav-menu li {
+    width: calc(50% - 40px);
+    max-width: 280px;
+    min-width: 200px;
 }
 
 .homepage-nav-menu li a img {
     height: auto;
-    width: auto;
-    max-height: 180px;
-    max-width: calc((90vw - 60px) / 3);
+    width: 100%;
+    max-height: 250px;
+    object-fit: cover;
     transition: transform 0.3s;
 }
 
@@ -264,12 +282,53 @@ body.homepage .footer {
     }
     
     .homepage-nav-menu {
-        gap: 15px;
+        flex-direction: column;
+        align-items: center;
+        gap: 25px;
+    }
+    
+    .homepage-nav-menu li {
+        width: 80vw;
+        max-width: 300px;
+        min-width: auto;
     }
     
     .homepage-nav-menu li a img {
-        max-height: 100px;
-        max-width: calc((90vw - 30px) / 3);
+        max-height: 200px;
+        width: 100%;
+    }
+    
+    /* Workshop categories mobile */
+    .workshops-page {
+        padding: 20px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .workshop-categories-grid {
+        flex-direction: column;
+        align-items: center;
+        gap: 25px;
+        width: 100%;
+    }
+    
+    .workshop-category-card {
+        width: 80vw !important;
+        max-width: 300px !important;
+        min-width: auto !important;
+        margin: 0 auto;
+    }
+    
+    .category-image {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .category-image img {
+        max-height: 200px;
+        width: 100%;
     }
 }
 
@@ -335,17 +394,28 @@ body.homepage .footer {
     padding: 20px 40px;
 }
 
+/* Workshop page title centered */
+.workshops-page h1 {
+    text-align: center;
+}
+
 .workshop-categories-grid {
     display: flex;
-    flex-direction: column;
-    gap: 30px;
+    flex-wrap: wrap;
+    gap: 40px;
     margin-top: 30px;
-    align-items: center;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px 0;
 }
 
 .workshop-category-card {
-    width: 100%;
-    max-width: 600px;
+    width: calc(50% - 40px);
+    max-width: 280px;
+    min-width: 200px;
     background: transparent;
     border-radius: 8px;
     overflow: hidden;
@@ -354,7 +424,7 @@ body.homepage .footer {
 }
 
 .workshop-category-card:hover {
-    transform: translateY(-5px);
+    transform: scale(1.08);
 }
 
 .workshop-category-card.inactive {
@@ -382,8 +452,10 @@ body.homepage .footer {
 }
 
 .category-image img {
-    width: 100%;
     height: auto;
+    width: 100%;
+    max-height: 250px;
+    object-fit: cover;
     display: block;
 }
 
@@ -831,12 +903,16 @@ body.homepage .footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 500px;
+    height: 600px;
 }
 
 .gallery-images {
     flex: 1;
     text-align: center;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .gallery-image {
@@ -866,16 +942,27 @@ body.homepage .footer {
 
 .gallery-nav {
     position: absolute;
-    background: rgba(255, 255, 255, 0.8);
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
     border: none;
-    font-size: 2rem;
-    padding: 20px;
+    padding: 10px;
     cursor: pointer;
-    border-radius: 4px;
+}
+
+.gallery-nav img {
+    width: 40px;
+    height: auto;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.gallery-nav:hover img {
+    opacity: 1;
 }
 
 .gallery-nav:hover {
-    background: rgba(255, 255, 255, 1);
+    background: transparent;
 }
 
 .gallery-nav.prev {

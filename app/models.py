@@ -70,7 +70,8 @@ class WorkshopCategory(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    image_path = db.Column(db.String(255))
+    image_path = db.Column(db.String(255))  # Header image on detail page
+    card_image_path = db.Column(db.String(255))  # Card image on overview page
     description = db.Column(db.Text)
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)

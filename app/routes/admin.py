@@ -818,6 +818,7 @@ def api_create_workshop_category():
         title=title,
         description=description,
         image_path=image_path,
+        card_image_path=image_path,  # Same image for both by default
         order=max_order + 1,
         is_active=True,
     )
@@ -883,12 +884,26 @@ def update_workshop_category_content(category_id):
 @bp.route('/api/workshop-category/<int:category_id>/image', methods=['POST'])
 @login_required
 def update_workshop_category_image(category_id):
-    """Update workshop category image inline."""
+    """Update workshop category header image (detail page)."""
     category = WorkshopCategory.query.get_or_404(category_id)
     image_file = request.files.get('image')
     saved = save_file(image_file, 'courses') if image_file else None
     if saved:
         category.image_path = saved
+        db.session.commit()
+        return {"success": True, "image_path": saved}
+    return {"success": False, "message": "Kein Bild hochgeladen"}, 400
+
+
+@bp.route('/api/workshop-category/<int:category_id>/card-image', methods=['POST'])
+@login_required
+def update_workshop_category_card_image(category_id):
+    """Update workshop category card image (overview page)."""
+    category = WorkshopCategory.query.get_or_404(category_id)
+    image_file = request.files.get('image')
+    saved = save_file(image_file, 'courses') if image_file else None
+    if saved:
+        category.card_image_path = saved
         db.session.commit()
         return {"success": True, "image_path": saved}
     return {"success": False, "message": "Kein Bild hochgeladen"}, 400

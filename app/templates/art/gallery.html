@@ -38,7 +38,9 @@
     <div class="gallery-container">
         {% if images %}
         <div class="gallery-viewer">
-            <button class="gallery-nav prev" id="prevBtn" aria-label="Vorheriges Bild">❮</button>
+            <button class="gallery-nav prev" id="prevBtn" aria-label="Vorheriges Bild">
+                <img src="{{ url_for('static', filename='images/Pfeil links.png') }}" alt="Zurück">
+            </button>
             
             <div class="gallery-images">
                 {% for image in images %}
@@ -54,7 +56,9 @@
                 {% endfor %}
             </div>
             
-            <button class="gallery-nav next" id="nextBtn" aria-label="Nächstes Bild">❯</button>
+            <button class="gallery-nav next" id="nextBtn" aria-label="Nächstes Bild">
+                <img src="{{ url_for('static', filename='images/Pfeil rechts.png') }}" alt="Weiter">
+            </button>
         </div>
         
         <div class="gallery-counter">

@@ -56,11 +56,12 @@
             <!-- Admin: image links to workshop -->
             <a href="{{ url_for('courses.workshop_category', category_id=category.id) }}" class="category-link">
                 <div class="category-image">
-                    {% if category.image_path %}
-                        {% if category.image_path.startswith('static/images/') %}
-                        <img src="{{ url_for('static', filename=category.image_path.replace('static/', '')) }}" alt="{{ category.title }}">
+                    {% set card_img = category.card_image_path or category.image_path %}
+                    {% if card_img %}
+                        {% if card_img.startswith('static/images/') %}
+                        <img src="{{ url_for('static', filename=card_img.replace('static/', '')) }}" alt="{{ category.title }}">
                         {% else %}
-                        <img src="{{ url_for('uploaded_file', filename=category.image_path) }}" alt="{{ category.title }}">
+                        <img src="{{ url_for('uploaded_file', filename=card_img) }}" alt="{{ category.title }}">
                         {% endif %}
                     {% else %}
                     <div class="image-placeholder">Kein Bild</div>
@@ -71,11 +72,12 @@
             <!-- Visitor: clickable link to category -->
             <a href="{{ url_for('courses.workshop_category', category_id=category.id) }}" class="category-link">
                 <div class="category-image">
-                    {% if category.image_path %}
-                        {% if category.image_path.startswith('static/images/') %}
-                        <img src="{{ url_for('static', filename=category.image_path.replace('static/', '')) }}" alt="{{ category.title }}">
+                    {% set card_img = category.card_image_path or category.image_path %}
+                    {% if card_img %}
+                        {% if card_img.startswith('static/images/') %}
+                        <img src="{{ url_for('static', filename=card_img.replace('static/', '')) }}" alt="{{ category.title }}">
                         {% else %}
-                        <img src="{{ url_for('uploaded_file', filename=category.image_path) }}" alt="{{ category.title }}">
+                        <img src="{{ url_for('uploaded_file', filename=card_img) }}" alt="{{ category.title }}">
                         {% endif %}
                     {% else %}
                     <div class="image-placeholder">Kein Bild</div>
@@ -163,7 +165,7 @@ categoryImageInput.addEventListener('change', async () => {
     const formData = new FormData();
     formData.append('image', file);
     try {
-        const resp = await fetch(`/admin/api/workshop-category/${currentCategoryId}/image`, { method: 'POST', body: formData });
+        const resp = await fetch(`/admin/api/workshop-category/${currentCategoryId}/card-image`, { method: 'POST', body: formData });
         const data = await resp.json();
         if (data.success && data.image_path) {
             const card = document.querySelector(`[data-category-id="${currentCategoryId}"]`);
