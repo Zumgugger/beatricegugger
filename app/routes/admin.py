@@ -556,6 +556,47 @@ def api_delete_registration(registration_id):
     return jsonify({'success': True})
 
 
+@bp.route('/api/registration/<int:registration_id>/promote', methods=['POST'])
+@login_required
+def api_promote_registration(registration_id):
+    """Move a registration from waitlist to registered."""
+    registration = CourseRegistration.query.get_or_404(registration_id)
+    
+    if not registration.is_waitlist:
+        return jsonify({'success': False, 'error': 'Diese Person ist bereits angemeldet'}), 400
+    
+    course = registration.course
+    spots_available = course.spots_available
+    
+    if spots_available <= 0:
+        return jsonify({'success': False, 'error': 'Keine freien Plätze verfügbar'}), 400
+    
+    # If the registration has more participants than available spots, we can only promote some
+    num_participants = registration.num_participants or 1
+    if num_participants <= spots_available:
+        # Promote entire registration
+        registration.is_waitlist = False
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'{num_participants} Person(en) angemeldet'})
+    else:
+        # Split the registration: promote available spots, keep rest on waitlist
+        registration.num_participants = num_participants - spots_available
+        
+        # Create new registration for the promoted spots
+        new_reg = CourseRegistration(
+            course_id=course.id,
+            vorname=registration.vorname,
+            name=registration.name,
+            telefonnummer=registration.telefonnummer,
+            email=registration.email,
+            num_participants=spots_available,
+            is_waitlist=False
+        )
+        db.session.add(new_reg)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'{spots_available} Person(en) angemeldet, {registration.num_participants} bleiben auf der Warteliste'})
+
+
 @bp.route('/api/registration/<int:registration_id>', methods=['PUT'])
 @login_required
 def api_update_registration(registration_id):
@@ -565,6 +606,7 @@ def api_update_registration(registration_id):
     
     telefonnummer = data.get('telefonnummer', registration.telefonnummer)
     email = data.get('email') or None
+    num_participants = data.get('num_participants', registration.num_participants)
     
     # Validate phone
     if not validate_phone(telefonnummer):
@@ -574,10 +616,15 @@ def api_update_registration(registration_id):
     if email and not validate_email(email):
         return jsonify({'success': False, 'error': 'Ungültige E-Mail-Adresse'}), 400
     
+    # Validate num_participants
+    if num_participants < 1:
+        num_participants = 1
+    
     registration.vorname = data.get('vorname', registration.vorname)
     registration.name = data.get('name', registration.name)
     registration.telefonnummer = telefonnummer
     registration.email = email
+    registration.num_participants = num_participants
     
     db.session.commit()
     return jsonify({'success': True})

@@ -32,12 +32,25 @@
     
     {% if course.is_full %}
     <div class="alert alert-warning">
-        <p>Dieser Kurs ist bereits voll.</p>
+        <p>Dieser Kurs ist bereits voll. Du kannst dich auf die Warteliste setzen lassen.</p>
     </div>
-    {% else %}
+    {% endif %}
+    
     <div class="registration-form">
-        <h2>Anmeldung</h2>
+        <h2 id="registration-title">{% if course.is_full %}Warteliste{% else %}Anmeldung{% endif %} für <span id="person-count">1</span> <span id="person-label">Person</span></h2>
         <form method="POST" action="{{ url_for('courses.register', course_id=course.id) }}" onsubmit="return validateRegistrationForm(this)">
+            <div class="form-group participant-selector">
+                <label>Anzahl Personen</label>
+                <div class="number-input">
+                    <button type="button" class="num-btn num-down" onclick="changeCount(-1)">▼</button>
+                    <input type="number" id="num_participants" name="num_participants" value="1" min="1" readonly>
+                    <button type="button" class="num-btn num-up" onclick="changeCount(1)">▲</button>
+                </div>
+                {% if course.max_participants and not course.is_full %}
+                <small class="form-hint">Freie Plätze: <span id="spots-available">{{ course.spots_available }}</span></small>
+                {% endif %}
+            </div>
+            
             <div class="form-group">
                 <label for="vorname">Vorname *</label>
                 <input type="text" id="vorname" name="vorname" required>
@@ -60,11 +73,68 @@
                 <input type="email" id="email" name="email">
             </div>
             
-            <button type="submit" class="btn btn-primary">Jetzt anmelden</button>
+            <button type="submit" class="btn btn-primary{% if course.is_full %} btn-waitlist{% endif %}">
+                {% if course.is_full %}Auf Warteliste setzen{% else %}Jetzt anmelden{% endif %}
+            </button>
         </form>
     </div>
     
+    <style>
+    .participant-selector {
+        margin-bottom: 20px;
+    }
+    .number-input {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        width: fit-content;
+    }
+    .number-input input {
+        width: 60px;
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+    }
+    .num-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #f5f5f5;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .num-btn:hover {
+        background: #e0e0e0;
+    }
+    .num-btn:active {
+        background: #d0d0d0;
+    }
+    </style>
+    
     <script>
+    const spotsAvailable = {{ course.spots_available if course.spots_available is not none else 'null' }};
+    const isFull = {{ 'true' if course.is_full else 'false' }};
+    
+    function changeCount(delta) {
+        const input = document.getElementById('num_participants');
+        let value = parseInt(input.value) + delta;
+        if (value < 1) value = 1;
+        input.value = value;
+        updateLabels(value);
+    }
+    
+    function updateLabels(count) {
+        document.getElementById('person-count').textContent = count;
+        document.getElementById('person-label').textContent = count === 1 ? 'Person' : 'Personen';
+    }
     function validateRegistrationForm(form) {
         const phone = form.telefonnummer.value.trim();
         const email = form.email.value.trim();
@@ -87,6 +157,5 @@
         return true;
     }
     </script>
-    {% endif %}
 </div>
 {% endblock %}

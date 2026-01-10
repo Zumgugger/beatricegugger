@@ -74,16 +74,16 @@ def register(course_id):
     """Handle course registration."""
     course = Course.query.get_or_404(course_id)
     
-    # Check if course is full
-    if course.is_full:
-        flash('Dieser Kurs ist bereits voll.', 'error')
-        return redirect(url_for('courses.detail', course_id=course_id))
-    
     # Get form data
     vorname = request.form.get('vorname', '').strip()
     name = request.form.get('name', '').strip()
     telefonnummer = request.form.get('telefonnummer', '').strip()
     email = request.form.get('email', '').strip()
+    num_participants = int(request.form.get('num_participants', 1))
+    
+    # Ensure at least 1 participant
+    if num_participants < 1:
+        num_participants = 1
     
     # Validate required fields
     if not all([vorname, name, telefonnummer]):
@@ -100,35 +100,89 @@ def register(course_id):
         flash('Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'error')
         return redirect(url_for('courses.detail', course_id=course_id))
     
-    # Create registration
-    registration = CourseRegistration(
-        course_id=course_id,
-        vorname=vorname,
-        name=name,
-        telefonnummer=telefonnummer,
-        email=email if email else None
-    )
+    # Calculate how many can be registered vs waitlisted
+    spots_available = course.spots_available if course.spots_available is not None else num_participants
+    registered_count = min(num_participants, spots_available)
+    waitlist_count = num_participants - registered_count
     
-    db.session.add(registration)
+    # Create registration for confirmed spots
+    if registered_count > 0:
+        registration = CourseRegistration(
+            course_id=course_id,
+            vorname=vorname,
+            name=name,
+            telefonnummer=telefonnummer,
+            email=email if email else None,
+            num_participants=registered_count,
+            is_waitlist=False
+        )
+        db.session.add(registration)
+        
+        # Send confirmation email if email provided
+        if email:
+            try:
+                send_confirmation_email(registration, course)
+                registration.confirmation_sent = True
+            except Exception as e:
+                logger.error(f"Error sending confirmation email: {e}")
+        
+        # Notify admin
+        try:
+            notify_admin_registration(registration, course)
+        except Exception as e:
+            logger.error(f"Error notifying admin: {e}")
+    
+    # Create waitlist entry if overflow
+    if waitlist_count > 0:
+        waitlist_registration = CourseRegistration(
+            course_id=course_id,
+            vorname=vorname,
+            name=name,
+            telefonnummer=telefonnummer,
+            email=email if email else None,
+            num_participants=waitlist_count,
+            is_waitlist=True
+        )
+        db.session.add(waitlist_registration)
+        
+        # Notify admin about waitlist
+        try:
+            notify_admin_registration(waitlist_registration, course)
+        except Exception as e:
+            logger.error(f"Error notifying admin: {e}")
+    
     db.session.commit()
     
-    # Send confirmation email if email provided
-    if email:
-        try:
-            send_confirmation_email(registration, course)
-            registration.confirmation_sent = True
-            db.session.commit()
-        except Exception as e:
-            logger.error(f"Error sending confirmation email: {e}")
+    # Redirect to appropriate success page
+    if waitlist_count > 0 and registered_count > 0:
+        # Mixed: some registered, some on waitlist
+        return redirect(url_for('courses.mixed_success', course_id=course_id, 
+                               registered=registered_count, waitlist=waitlist_count))
+    elif waitlist_count > 0:
+        # All on waitlist
+        return redirect(url_for('courses.waitlist_success', course_id=course_id, count=waitlist_count))
+    else:
+        # All registered
+        return redirect(url_for('courses.registration_success', course_id=course_id, count=registered_count))
 
-    # Notify admin
-    try:
-        notify_admin_registration(registration, course)
-    except Exception as e:
-        logger.error(f"Error notifying admin: {e}")
-    
-    # Redirect to confirmation page
-    return redirect(url_for('courses.registration_success', course_id=course_id))
+
+@bp.route('/<int:course_id>/gemischt-erfolgreich')
+def mixed_success(course_id):
+    """Show mixed registration success message (some registered, some waitlisted)."""
+    course = Course.query.get_or_404(course_id)
+    registered = request.args.get('registered', 1, type=int)
+    waitlist = request.args.get('waitlist', 0, type=int)
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
+    return render_template('courses/mixed_success.html', course=course, 
+                          registered=registered, waitlist=waitlist, nav_items=nav_items)
+
+
+@bp.route('/<int:course_id>/warteliste-erfolgreich')
+def waitlist_success(course_id):
+    """Show waitlist success message."""
+    course = Course.query.get_or_404(course_id)
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
+    return render_template('courses/waitlist_success.html', course=course, nav_items=nav_items)
 
 
 @bp.route('/<int:course_id>/anmeldung-erfolgreich')

@@ -109,8 +109,20 @@ class Course(db.Model):
     
     @property
     def registration_count(self):
-        """Get number of registrations for this course."""
-        return self.registrations.count()
+        """Get total number of participants for this course (excluding waitlist)."""
+        from sqlalchemy import func
+        result = db.session.query(func.sum(CourseRegistration.num_participants)).filter(
+            CourseRegistration.course_id == self.id,
+            CourseRegistration.is_waitlist == False
+        ).scalar()
+        return result or 0
+    
+    @property
+    def spots_available(self):
+        """Get number of available spots."""
+        if self.max_participants:
+            return max(0, self.max_participants - self.registration_count)
+        return None  # Unlimited
     
     @property
     def is_full(self):
@@ -133,11 +145,13 @@ class CourseRegistration(db.Model):
     name = db.Column(db.String(100), nullable=False)
     telefonnummer = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120))  # Optional, for confirmation email
+    num_participants = db.Column(db.Integer, default=1)  # Number of people in this registration
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
     confirmation_sent = db.Column(db.Boolean, default=False)
+    is_waitlist = db.Column(db.Boolean, default=False)  # True if on waitlist
     
     def __repr__(self):
-        return f'<CourseRegistration {self.vorname} {self.name} for Course {self.course_id}>'
+        return f'<CourseRegistration {self.vorname} {self.name} ({self.num_participants}) for Course {self.course_id}>'
 
 
 class ArtCategory(db.Model):

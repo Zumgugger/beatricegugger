@@ -17,9 +17,9 @@
     {% endif %}
     
     <div class="registrations-summary">
-        <span class="count">{{ registrations|length }} Anmeldung{% if registrations|length != 1 %}en{% endif %}</span>
+        <span class="count">{{ course.registration_count }} Platz{% if course.registration_count != 1 %}̈e{% endif %} belegt</span>
         {% if course.max_participants %}
-        <span class="capacity">von {{ course.max_participants }} Plätzen</span>
+        <span class="capacity">von {{ course.max_participants }}</span>
         {% endif %}
         <button class="btn-admin btn-admin-add" onclick="showAddRegistrationForm()" title="Anmeldung hinzufügen" style="margin-left: auto;">+</button>
     </div>
@@ -82,6 +82,12 @@
                     <input type="email" name="email" id="edit_email">
                 </div>
             </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_num_participants">Anzahl Personen *</label>
+                    <input type="number" name="num_participants" id="edit_num_participants" min="1" value="1" required>
+                </div>
+            </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Speichern</button>
                 <button type="button" class="btn btn-secondary" onclick="hideEditRegistrationForm()">Abbrechen</button>
@@ -91,9 +97,13 @@
     
     <div class="registrations-list">
         {% for reg in registrations %}
-        <div class="registration-card" data-registration-id="{{ reg.id }}">
+        <div class="registration-card{% if reg.is_waitlist %} waitlist{% endif %}" data-registration-id="{{ reg.id }}">
             <div class="registration-info">
-                <div class="registration-name">{{ reg.vorname }} {{ reg.name }}</div>
+                <div class="registration-name">
+                    {{ reg.vorname }} {{ reg.name }}
+                    {% if (reg.num_participants or 1) > 1 %}<span class="participant-count">× {{ reg.num_participants }}</span>{% endif %}
+                    {% if reg.is_waitlist %}<span class="waitlist-badge">Warteliste</span>{% endif %}
+                </div>
                 <div class="registration-contact">
                     <span class="phone">📞 {{ reg.telefonnummer }}</span>
                     {% if reg.email %}
@@ -103,7 +113,10 @@
                 <div class="registration-date">Angemeldet: {{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }}</div>
             </div>
             <div class="registration-actions">
-                <button class="btn-icon btn-edit" onclick="editRegistration({{ reg.id }}, '{{ reg.vorname }}', '{{ reg.name }}', '{{ reg.telefonnummer }}', '{{ reg.email or '' }}')" title="Anmeldung bearbeiten">✏️</button>
+                {% if reg.is_waitlist and course.spots_available > 0 %}
+                <button class="btn-promote" onclick="promoteToRegistered({{ reg.id }}, '{{ reg.vorname }} {{ reg.name }}')" title="Von Warteliste zu Angemeldet">✅ Anmelden</button>
+                {% endif %}
+                <button class="btn-icon btn-edit" onclick="editRegistration({{ reg.id }}, '{{ reg.vorname }}', '{{ reg.name }}', '{{ reg.telefonnummer }}', '{{ reg.email or '' }}', {{ reg.num_participants or 1 }})" title="Anmeldung bearbeiten">✏️</button>
                 <button class="btn-icon btn-delete" onclick="deleteRegistration({{ reg.id }}, '{{ reg.vorname }} {{ reg.name }}')" title="Anmeldung löschen">🗑️</button>
             </div>
         </div>
@@ -167,6 +180,35 @@
     background: rgba(255, 255, 255, 0.5);
 }
 
+.registration-card.waitlist {
+    background: rgba(255, 193, 7, 0.15);
+    border-color: #ffc107;
+}
+
+.waitlist-badge {
+    display: inline-block;
+    background: #ffc107;
+    color: #333;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.participant-count {
+    display: inline-block;
+    background: #8B4513;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
 .registration-name {
     font-weight: bold;
     font-size: 1.1rem;
@@ -192,6 +234,22 @@
 .registration-actions {
     display: flex;
     gap: 10px;
+    align-items: center;
+}
+
+.btn-promote {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: 'Courier Prime', monospace;
+}
+
+.btn-promote:hover {
+    background: #218838;
 }
 
 .page-actions {
@@ -248,7 +306,7 @@ function hideEditRegistrationForm() {
     });
 }
 
-function editRegistration(id, vorname, name, telefonnummer, email) {
+function editRegistration(id, vorname, name, telefonnummer, email, numParticipants) {
     // Hide all cards first, then show them except the one being edited
     document.querySelectorAll('.registration-card').forEach(card => {
         card.style.display = 'flex';
@@ -266,6 +324,7 @@ function editRegistration(id, vorname, name, telefonnummer, email) {
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_telefonnummer').value = telefonnummer;
     document.getElementById('edit_email').value = email;
+    document.getElementById('edit_num_participants').value = numParticipants || 1;
 }
 
 function validatePhone(phone) {
@@ -345,7 +404,8 @@ async function submitEditRegistration(event) {
         vorname: form.vorname.value,
         name: form.name.value,
         telefonnummer: form.telefonnummer.value,
-        email: form.email.value || null
+        email: form.email.value || null,
+        num_participants: parseInt(form.num_participants.value) || 1
     };
     
     try {
@@ -384,6 +444,24 @@ async function deleteRegistration(registrationId, name) {
         }
     } catch (e) {
         alert('Fehler beim Löschen: ' + e.message);
+    }
+}
+
+async function promoteToRegistered(registrationId, name) {
+    if (!confirm(`"${name}" von der Warteliste zu Angemeldet verschieben?`)) {
+        return;
+    }
+    
+    try {
+        const resp = await fetch(`/admin/api/registration/${registrationId}/promote`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler: ' + e.message);
     }
 }
 </script>

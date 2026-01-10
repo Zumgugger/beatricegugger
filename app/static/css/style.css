@@ -777,11 +777,6 @@ body.homepage .footer {
     border-left: 4px solid #8B4513;
 }
 
-.course-item.course-full {
-    opacity: 0.7;
-    border-left-color: #999;
-}
-
 .course-info {
     flex: 1;
 }
@@ -829,7 +824,7 @@ body.homepage .footer {
     color: white;
     padding: 2px 8px;
     border-radius: 4px;
-    font-size: 0.8rem;
+    font-size: 1rem;
     margin-left: 10px;
 }
 
@@ -852,6 +847,21 @@ body.homepage .footer {
 
 .btn-register:hover {
     background: #6d360f;
+}
+
+.btn-waitlist {
+    background: #8B4513;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-family: 'Courier Prime', monospace;
+}
+
+.btn-waitlist:hover {
+    background: #6d360f;
+    color: white;
 }
 
 .btn-disabled {

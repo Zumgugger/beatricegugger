@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Anmeldung - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="registration-success">
+    <div class="success-message">
+        <h1>Danke für die Anmeldung.</h1>
+        <p>{{ registered }} {{ 'Person' if registered == 1 else 'Personen' }} angemeldet,</p>
+        <p>{{ waitlist }} auf der Warteliste.</p>
+    </div>
+</div>
+
+<style>
+.registration-success {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    text-align: center;
+}
+
+.success-message {
+    padding: 60px;
+}
+
+.success-message h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+}
+
+.success-message p {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+</style>
+
+<script>
+setTimeout(function() {
+    window.location.href = "{{ url_for('courses.workshop_category', category_id=course.workshop_category_id) }}";
+}, 3000);
+</script>
+{% endblock %}
