@@ -80,22 +80,26 @@ function enableInlineEditing() {
         document.body.appendChild(input);
 
         input.addEventListener('change', async () => {
+            console.log('File selected:', input.files);
             if (!input.files.length) return;
             const file = input.files[0];
             const entity = wrapper.dataset.entity;
             const id = wrapper.dataset.entityId;
+            console.log('Uploading for entity:', entity, 'id:', id);
             const url = buildImageEndpoint(entity, id);
+            console.log('Upload URL:', url);
             if (!url) return;
 
             const formData = new FormData();
             formData.append('image', file);
             try {
+                console.log('Sending fetch...');
                 const resp = await fetch(url, { method: 'POST', body: formData });
                 const data = await resp.json();
+                console.log('Response:', data);
                 if (data.success && data.image_path) {
                     let img = wrapper.querySelector('img');
                     if (!img) {
-                        // No image exists yet, create one
                         img = document.createElement('img');
                         wrapper.innerHTML = '';
                         wrapper.appendChild(img);
@@ -114,7 +118,12 @@ function enableInlineEditing() {
             }
         });
 
-        wrapper.addEventListener('click', () => input.click());
+        wrapper.addEventListener('click', (e) => {
+            console.log('Image clicked:', wrapper.dataset);
+            e.preventDefault();
+            e.stopPropagation();
+            input.click();
+        });
     });
 }
 
@@ -130,6 +139,9 @@ function buildTextEndpoint(entity, id) {
     if (entity === 'art-category') {
         return `/admin/api/art-category/${id}/content`;
     }
+    if (entity === 'workshop-category') {
+        return `/admin/api/workshop-category/${id}/content`;
+    }
     return null;
 }
 
@@ -143,6 +155,9 @@ function buildImageEndpoint(entity, id) {
     }
     if (entity === 'art-category') {
         return `/admin/api/art-category/${id}/image`;
+    }
+    if (entity === 'workshop-category') {
+        return `/admin/api/workshop-category/${id}/image`;
     }
     return null;
 }

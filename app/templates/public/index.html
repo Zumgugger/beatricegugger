@@ -15,32 +15,21 @@
 
     <nav class="homepage-nav">
         <ul class="homepage-nav-menu">
-            {% if nav_items %}
-                {% for item in nav_items %}
-                <li>
-                    {% if item.slug == 'about-kontakt' %}
-                        {% set url = url_for('public.about_kontakt') %}
-                    {% elif item.slug == 'courses.index' or 'angebot' in item.slug.lower() %}
-                        {% set url = url_for('courses.index') %}
-                    {% elif item.slug == 'art' %}
-                        {% set url = url_for('art.index') %}
-                    {% else %}
-                        {% set url = '#' %}
-                    {% endif %}
-                    <a href="{{ url }}">
-                        {% if item.icon_path %}
-                        {% if item.icon_path.startswith('navigation/') or item.icon_path.startswith('uploads/') %}
-                        <img src="{{ url_for('uploaded_file', filename=item.icon_path.split('uploads/', 1)[-1]) if item.icon_path.startswith('uploads/') else url_for('uploaded_file', filename=item.icon_path) }}" alt="{{ item.title }}">
-                        {% else %}
-                        <img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}">
-                        {% endif %}
-                        {% else %}
-                        {{ item.title }}
-                        {% endif %}
-                    </a>
-                </li>
-                {% endfor %}
-            {% endif %}
+            <li>
+                <a href="{{ url_for('public.about_kontakt') }}">
+                    <img src="{{ url_for('static', filename='images/About Kontakt grün.png') }}" alt="About/Kontakt">
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('courses.index') }}">
+                    <img src="{{ url_for('static', filename='images/Angebot braun.png') }}" alt="Angebot">
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('art.index') }}">
+                    <img src="{{ url_for('static', filename='images/Art pink.png') }}" alt="Art">
+                </a>
+            </li>
         </ul>
     </nav>
 </header>

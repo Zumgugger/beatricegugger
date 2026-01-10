@@ -64,16 +64,39 @@ class Page(db.Model):
         return f'<Page {self.title}>'
 
 
+class WorkshopCategory(db.Model):
+    """Workshop categories (sub-navigation on Angebot page)."""
+    __tablename__ = 'workshop_categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    image_path = db.Column(db.String(255))
+    description = db.Column(db.Text)
+    order = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to courses
+    courses = db.relationship('Course', backref='workshop_category', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<WorkshopCategory {self.title}>'
+
+
 class Course(db.Model):
     """Course offerings."""
     __tablename__ = 'courses'
     
     id = db.Column(db.Integer, primary_key=True)
+    workshop_category_id = db.Column(db.Integer, db.ForeignKey('workshop_categories.id'), nullable=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     image_path = db.Column(db.String(255))
     date = db.Column(db.DateTime)
+    time_info = db.Column(db.String(100))  # e.g., "14:00 - 17:00"
+    cost = db.Column(db.String(100))  # e.g., "CHF 120.-"
     location = db.Column(db.String(255))
+    location_url = db.Column(db.String(500))  # Google Maps URL
     max_participants = db.Column(db.Integer)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

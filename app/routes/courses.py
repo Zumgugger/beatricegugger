@@ -1,7 +1,8 @@
 """Course routes (listing, detail, registration)."""
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask_login import current_user
 from app import db, mail
-from app.models import Course, CourseRegistration, NavigationItem
+from app.models import Course, CourseRegistration, NavigationItem, WorkshopCategory, Page
 from flask_mail import Message
 import os
 
@@ -10,10 +11,25 @@ bp = Blueprint('courses', __name__, url_prefix='/angebot')
 
 @bp.route('/')
 def index():
-    """List all active courses."""
-    courses = Course.query.filter_by(is_active=True).order_by(Course.date.desc()).all()
+    """List all workshop categories."""
+    # Admin sees all categories (including inactive), regular users only see active
+    if current_user.is_authenticated:
+        categories = WorkshopCategory.query.order_by(WorkshopCategory.order).all()
+    else:
+        categories = WorkshopCategory.query.filter_by(is_active=True).order_by(WorkshopCategory.order).all()
     nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
-    return render_template('courses/index.html', courses=courses, nav_items=nav_items)
+    # Get page title
+    page = Page.query.filter_by(slug='angebot').first()
+    return render_template('courses/index.html', categories=categories, nav_items=nav_items, page=page)
+
+
+@bp.route('/kategorie/<int:category_id>')
+def workshop_category(category_id):
+    """List courses in a workshop category."""
+    category = WorkshopCategory.query.get_or_404(category_id)
+    courses = Course.query.filter_by(workshop_category_id=category_id, is_active=True).order_by(Course.date.asc()).all()
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
+    return render_template('courses/category.html', category=category, courses=courses, nav_items=nav_items)
 
 
 @bp.route('/<int:course_id>')

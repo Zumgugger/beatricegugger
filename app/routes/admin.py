@@ -10,7 +10,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
-from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem
+from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory
 from werkzeug.utils import secure_filename
 import os
 from pathlib import Path
@@ -284,18 +284,23 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        print(f"DEBUG LOGIN: email={email}")
         
         user = User.query.filter_by(email=email).first()
+        print(f"DEBUG LOGIN: user found={user}")
         
         if user and user.check_password(password):
+            print("DEBUG LOGIN: password OK, logging in")
             login_user(user, remember=True)
             from datetime import datetime
             user.last_login = datetime.utcnow()
             db.session.commit()
             
             next_page = request.args.get('next')
+            print(f"DEBUG LOGIN: redirecting to {next_page or 'index'}")
             return redirect(next_page or url_for('public.index'))
         else:
+            print(f"DEBUG LOGIN: FAILED - user={user}")
             flash('Ungültige E-Mail oder Passwort.', 'error')
     
     return render_template('admin/login.html')
@@ -709,3 +714,137 @@ def delete_navigation(item_id):
     db.session.commit()
     flash('Navigationseintrag gelöscht.', 'info')
     return redirect(url_for('admin.navigation'))
+
+
+# --- Workshop Category API Routes ---
+
+
+@bp.route('/api/workshop-category', methods=['POST'])
+@login_required
+def api_create_workshop_category():
+    """Create a new workshop category via form submission."""
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    
+    if not title:
+        flash('Titel ist erforderlich.', 'error')
+        return redirect(url_for('courses.index'))
+    
+    image_file = request.files.get('image')
+    image_path = save_file(image_file, 'courses') if image_file and image_file.filename else None
+    
+    # Get max order
+    max_order = db.session.query(db.func.max(WorkshopCategory.order)).scalar() or 0
+    
+    category = WorkshopCategory(
+        title=title,
+        description=description,
+        image_path=image_path,
+        order=max_order + 1,
+        is_active=True,
+    )
+    db.session.add(category)
+    db.session.commit()
+    flash('Workshop-Kategorie wurde erstellt.', 'success')
+    return redirect(url_for('courses.index'))
+
+
+@bp.route('/api/workshop-category/<int:category_id>', methods=['DELETE'])
+@login_required
+def api_delete_workshop_category(category_id):
+    """Delete a workshop category via AJAX."""
+    category = WorkshopCategory.query.get_or_404(category_id)
+    db.session.delete(category)
+    db.session.commit()
+    return {"success": True}
+
+
+@bp.route('/api/workshop-category/<int:category_id>/toggle', methods=['POST'])
+@login_required
+def api_toggle_workshop_category(category_id):
+    """Toggle workshop category is_active status."""
+    category = WorkshopCategory.query.get_or_404(category_id)
+    data = request.get_json(silent=True) or {}
+    is_active = data.get('is_active', True)
+    category.is_active = is_active
+    db.session.commit()
+    return {"success": True, "is_active": category.is_active}
+
+
+@bp.route('/api/workshop-category/<int:category_id>/content', methods=['POST'])
+@login_required
+def update_workshop_category_content(category_id):
+    """Update workshop category title/description inline."""
+    category = WorkshopCategory.query.get_or_404(category_id)
+    data = request.get_json(silent=True) or {}
+    title = data.get('title')
+    description = data.get('description')
+
+    if title is not None:
+        category.title = title.strip()
+    if description is not None:
+        category.description = description.strip()
+    db.session.commit()
+    return {"success": True}
+
+
+@bp.route('/api/workshop-category/<int:category_id>/image', methods=['POST'])
+@login_required
+def update_workshop_category_image(category_id):
+    """Update workshop category image inline."""
+    category = WorkshopCategory.query.get_or_404(category_id)
+    image_file = request.files.get('image')
+    saved = save_file(image_file, 'courses') if image_file else None
+    if saved:
+        category.image_path = saved
+        db.session.commit()
+        return {"success": True, "image_path": saved}
+    return {"success": False, "message": "Kein Bild hochgeladen"}, 400
+
+
+@bp.route('/api/workshop-category/<int:category_id>/course', methods=['POST'])
+@login_required
+def api_create_course_in_category(category_id):
+    """Create a new course within a workshop category."""
+    category = WorkshopCategory.query.get_or_404(category_id)
+    
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    date_str = request.form.get('date')
+    time_info = request.form.get('time_info', '').strip()
+    cost = request.form.get('cost', '').strip()
+    location = request.form.get('location', '').strip()
+    location_url = request.form.get('location_url', '').strip()
+    max_participants = request.form.get('max_participants')
+    
+    if not title:
+        flash('Titel ist erforderlich.', 'error')
+        return redirect(url_for('courses.workshop_category', category_id=category_id))
+    
+    image_file = request.files.get('image')
+    image_path = save_file(image_file, 'courses') if image_file and image_file.filename else None
+    
+    parsed_date = None
+    if date_str:
+        try:
+            parsed_date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            pass
+    
+    course = Course(
+        workshop_category_id=category_id,
+        title=title,
+        description=description,
+        date=parsed_date,
+        time_info=time_info if time_info else None,
+        cost=cost if cost else None,
+        location=location if location else None,
+        location_url=location_url if location_url else None,
+        max_participants=int(max_participants) if max_participants else None,
+        is_active=True,
+        image_path=image_path,
+    )
+    db.session.add(course)
+    db.session.commit()
+    flash('Kurs wurde erstellt.', 'success')
+    return redirect(url_for('courses.workshop_category', category_id=category_id))

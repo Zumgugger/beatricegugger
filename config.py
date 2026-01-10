@@ -5,6 +5,9 @@ from pathlib import Path
 
 basedir = Path(__file__).parent.absolute()
 
+# Explicitly set database path as string to avoid any path issues
+DATABASE_PATH = str(basedir / "beatricegugger.db")
+
 
 class Config:
     """Base configuration."""
@@ -12,9 +15,8 @@ class Config:
     # Secret key for sessions
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
-    # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f'sqlite:///{basedir / "beatricegugger.db"}'
+    # Database - ALWAYS use explicit absolute path (ignore DATABASE_URL from .env)
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Flask-Login
