@@ -11,7 +11,7 @@
     
     {% if current_user.is_authenticated %}
     <div class="admin-controls">
-        <button class="btn btn-add" onclick="showNewCategoryForm()">+ Neue Workshop-Kategorie</button>
+        <button class="btn-admin btn-admin-add" onclick="showNewCategoryForm()" title="Neue Workshop-Kategorie">+</button>
     </div>
     
     <!-- New Category Form -->
@@ -47,24 +47,26 @@
                     <input type="checkbox" {% if category.is_active %}checked{% endif %} onchange="toggleWorkshopCategory({{ category.id }}, this.checked)">
                     <span class="toggle-label">{{ 'Aktiv' if category.is_active else 'Inaktiv' }}</span>
                 </label>
+                <button class="btn-icon btn-change-image" onclick="changeWorkshopCategoryImage({{ category.id }})" title="Bild wechseln">📷</button>
                 <button class="btn-icon btn-delete" onclick="deleteWorkshopCategory({{ category.id }}, '{{ category.title }}')" title="Kategorie löschen">🗑️</button>
             </div>
             {% endif %}
             
             {% if current_user.is_authenticated %}
-            <!-- Admin: clickable image for editing (no link wrapper) -->
-            <div class="category-image editable-image"
-                 data-entity="workshop-category" data-entity-id="{{ category.id }}">
-                {% if category.image_path %}
-                    {% if category.image_path.startswith('static/images/') %}
-                    <img src="{{ url_for('static', filename=category.image_path.replace('static/', '')) }}" alt="{{ category.title }}">
+            <!-- Admin: image links to workshop -->
+            <a href="{{ url_for('courses.workshop_category', category_id=category.id) }}" class="category-link">
+                <div class="category-image">
+                    {% if category.image_path %}
+                        {% if category.image_path.startswith('static/images/') %}
+                        <img src="{{ url_for('static', filename=category.image_path.replace('static/', '')) }}" alt="{{ category.title }}">
+                        {% else %}
+                        <img src="{{ url_for('uploaded_file', filename=category.image_path) }}" alt="{{ category.title }}">
+                        {% endif %}
                     {% else %}
-                    <img src="{{ url_for('uploaded_file', filename=category.image_path) }}" alt="{{ category.title }}">
+                    <div class="image-placeholder">Kein Bild</div>
                     {% endif %}
-                {% else %}
-                <div class="image-placeholder">Bild hinzufügen</div>
-                {% endif %}
-            </div>
+                </div>
+            </a>
             {% else %}
             <!-- Visitor: clickable link to category -->
             <a href="{{ url_for('courses.workshop_category', category_id=category.id) }}" class="category-link">
@@ -79,19 +81,6 @@
                     <div class="image-placeholder">Kein Bild</div>
                     {% endif %}
                 </div>
-            </a>
-            {% endif %}
-            
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('courses.workshop_category', category_id=category.id) }}" class="category-title-link">
-                <h2 class="category-title editable-text"
-                    data-entity="workshop-category" data-entity-id="{{ category.id }}" data-field="title">
-                    {{ category.title }}
-                </h2>
-            </a>
-            {% else %}
-            <a href="{{ url_for('courses.workshop_category', category_id=category.id) }}" class="category-title-link">
-                <h2 class="category-title">{{ category.title }}</h2>
             </a>
             {% endif %}
         </div>
@@ -154,6 +143,122 @@ async function toggleWorkshopCategory(categoryId, isActive) {
         console.error(err);
     }
 }
+
+// Change image button functionality
+const categoryImageInput = document.createElement('input');
+categoryImageInput.type = 'file';
+categoryImageInput.accept = 'image/*';
+categoryImageInput.style.display = 'none';
+document.body.appendChild(categoryImageInput);
+let currentCategoryId = null;
+
+function changeWorkshopCategoryImage(categoryId) {
+    currentCategoryId = categoryId;
+    categoryImageInput.click();
+}
+
+categoryImageInput.addEventListener('change', async () => {
+    if (!categoryImageInput.files.length || !currentCategoryId) return;
+    const file = categoryImageInput.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+        const resp = await fetch(`/admin/api/workshop-category/${currentCategoryId}/image`, { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.success && data.image_path) {
+            const card = document.querySelector(`[data-category-id="${currentCategoryId}"]`);
+            const img = card.querySelector('.category-image img');
+            if (img) {
+                img.src = `/uploads/${data.image_path}?t=${Date.now()}`;
+            }
+            showFlashMessage('Bild aktualisiert', 'info');
+        } else {
+            alert(data.message || 'Fehler beim Hochladen');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Fehler beim Hochladen');
+    } finally {
+        categoryImageInput.value = '';
+        currentCategoryId = null;
+    }
+});
+
+// Drag and drop for workshop categories
+function initCategoryDragDrop() {
+    const grid = document.querySelector('.workshop-categories-grid');
+    if (!grid) return;
+    
+    let draggedItem = null;
+    
+    grid.querySelectorAll('.workshop-category-card').forEach(card => {
+        card.setAttribute('draggable', 'true');
+        card.style.cursor = 'grab';
+        
+        card.addEventListener('dragstart', (e) => {
+            draggedItem = card;
+            card.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        
+        card.addEventListener('dragend', () => {
+            card.style.opacity = '1';
+            draggedItem = null;
+            grid.querySelectorAll('.workshop-category-card').forEach(c => c.classList.remove('drag-over'));
+        });
+        
+        card.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        
+        card.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            if (card !== draggedItem) {
+                card.classList.add('drag-over');
+            }
+        });
+        
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over');
+        });
+        
+        card.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            if (card !== draggedItem && draggedItem) {
+                const allCards = [...grid.querySelectorAll('.workshop-category-card')];
+                const draggedIdx = allCards.indexOf(draggedItem);
+                const targetIdx = allCards.indexOf(card);
+                
+                if (draggedIdx < targetIdx) {
+                    card.parentNode.insertBefore(draggedItem, card.nextSibling);
+                } else {
+                    card.parentNode.insertBefore(draggedItem, card);
+                }
+                
+                // Save new order
+                const newOrder = [...grid.querySelectorAll('.workshop-category-card')].map((c, i) => ({
+                    id: parseInt(c.dataset.categoryId),
+                    order: i
+                }));
+                
+                try {
+                    await fetch('/admin/api/workshop-categories/reorder', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: newOrder })
+                    });
+                    showFlashMessage('Reihenfolge gespeichert', 'info');
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        });
+    });
+}
+
+initCategoryDragDrop();
 
 function showFlashMessage(message, type) {
     const flash = document.createElement('div');

@@ -716,6 +716,20 @@ def delete_navigation(item_id):
     return redirect(url_for('admin.navigation'))
 
 
+@bp.route('/api/navigation/reorder', methods=['POST'])
+@login_required
+def api_reorder_navigation():
+    """Reorder navigation items."""
+    data = request.get_json(silent=True) or {}
+    order_list = data.get('order', [])
+    for item in order_list:
+        nav_item = NavigationItem.query.get(item['id'])
+        if nav_item:
+            nav_item.order = item['order']
+    db.session.commit()
+    return {"success": True}
+
+
 # --- Workshop Category API Routes ---
 
 
@@ -769,6 +783,20 @@ def api_toggle_workshop_category(category_id):
     category.is_active = is_active
     db.session.commit()
     return {"success": True, "is_active": category.is_active}
+
+
+@bp.route('/api/workshop-categories/reorder', methods=['POST'])
+@login_required
+def api_reorder_workshop_categories():
+    """Reorder workshop categories."""
+    data = request.get_json(silent=True) or {}
+    order_list = data.get('order', [])
+    for item in order_list:
+        category = WorkshopCategory.query.get(item['id'])
+        if category:
+            category.order = item['order']
+    db.session.commit()
+    return {"success": True}
 
 
 @bp.route('/api/workshop-category/<int:category_id>/content', methods=['POST'])

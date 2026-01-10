@@ -14,22 +14,31 @@
     </div>
 
     <nav class="homepage-nav">
-        <ul class="homepage-nav-menu">
-            <li>
-                <a href="{{ url_for('public.about_kontakt') }}">
-                    <img src="{{ url_for('static', filename='images/About Kontakt grün.png') }}" alt="About/Kontakt">
+        <ul class="homepage-nav-menu{% if current_user.is_authenticated %} admin-sortable{% endif %}" id="homepageNavMenu">
+            {% for item in nav_items %}
+            <li data-nav-id="{{ item.id }}" {% if current_user.is_authenticated %}draggable="true"{% endif %}>
+                {% if item.slug == 'about-kontakt' or item.slug == 'about' or 'kontakt' in item.slug.lower() %}
+                    {% set url = url_for('public.about_kontakt') %}
+                {% elif item.slug == 'courses.index' or 'angebot' in item.slug.lower() %}
+                    {% set url = url_for('courses.index') %}
+                {% elif item.slug == 'art' %}
+                    {% set url = url_for('art.index') %}
+                {% else %}
+                    {% set url = '#' %}
+                {% endif %}
+                <a href="{{ url }}">
+                    {% if item.icon_path %}
+                    {% if item.icon_path.startswith('navigation/') or item.icon_path.startswith('uploads/') %}
+                    <img src="{{ url_for('uploaded_file', filename=item.icon_path.split('uploads/', 1)[-1]) if item.icon_path.startswith('uploads/') else url_for('uploaded_file', filename=item.icon_path) }}" alt="{{ item.title }}">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}">
+                    {% endif %}
+                    {% else %}
+                    {{ item.title }}
+                    {% endif %}
                 </a>
             </li>
-            <li>
-                <a href="{{ url_for('courses.index') }}">
-                    <img src="{{ url_for('static', filename='images/Angebot braun.png') }}" alt="Angebot">
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('art.index') }}">
-                    <img src="{{ url_for('static', filename='images/Art pink.png') }}" alt="Art">
-                </a>
-            </li>
+            {% endfor %}
         </ul>
     </nav>
 </header>
@@ -37,3 +46,92 @@
 
 {% block content %}
 {% endblock %}
+
+{% if current_user.is_authenticated %}
+{% block extra_js %}
+<script>
+// Drag and drop for homepage navigation
+function initNavDragDrop() {
+    const menu = document.getElementById('homepageNavMenu');
+    if (!menu) return;
+    
+    let draggedItem = null;
+    
+    menu.querySelectorAll('li[draggable="true"]').forEach(item => {
+        item.style.cursor = 'grab';
+        
+        item.addEventListener('dragstart', (e) => {
+            draggedItem = item;
+            item.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        
+        item.addEventListener('dragend', () => {
+            item.style.opacity = '1';
+            draggedItem = null;
+            menu.querySelectorAll('li').forEach(i => i.classList.remove('drag-over'));
+        });
+        
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        
+        item.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            if (item !== draggedItem) {
+                item.classList.add('drag-over');
+            }
+        });
+        
+        item.addEventListener('dragleave', () => {
+            item.classList.remove('drag-over');
+        });
+        
+        item.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            item.classList.remove('drag-over');
+            if (item !== draggedItem && draggedItem) {
+                const allItems = [...menu.querySelectorAll('li')];
+                const draggedIdx = allItems.indexOf(draggedItem);
+                const targetIdx = allItems.indexOf(item);
+                
+                if (draggedIdx < targetIdx) {
+                    item.parentNode.insertBefore(draggedItem, item.nextSibling);
+                } else {
+                    item.parentNode.insertBefore(draggedItem, item);
+                }
+                
+                // Save new order
+                const newOrder = [...menu.querySelectorAll('li')].map((li, i) => ({
+                    id: parseInt(li.dataset.navId),
+                    order: i
+                }));
+                
+                try {
+                    await fetch('/admin/api/navigation/reorder', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: newOrder })
+                    });
+                    showFlashMessage('Reihenfolge gespeichert', 'info');
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        });
+    });
+}
+
+function showFlashMessage(message, type) {
+    const flash = document.createElement('div');
+    flash.className = `flash-message flash-${type}`;
+    flash.textContent = message;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 3000);
+}
+
+initNavDragDrop();
+</script>
+{% endblock %}
+{% endif %}

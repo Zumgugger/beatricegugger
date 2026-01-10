@@ -36,7 +36,7 @@
                     {% if nav_items %}
                         {% for item in nav_items %}
                         <li>
-                            {% if item.slug == 'about-kontakt' %}
+                            {% if item.slug == 'about-kontakt' or item.slug == 'about' or 'kontakt' in item.slug.lower() %}
                                 {% set url = url_for('public.about_kontakt') %}
                             {% elif item.slug == 'courses.index' or 'angebot' in item.slug.lower() %}
                                 {% set url = url_for('courses.index') %}
@@ -82,7 +82,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>&copy; {{ now.year if now else '2026' }} Beatrice Gugger. Alle Rechte vorbehalten.</p>
+            <p><a href="https://zumgugger.ch" target="_blank">&copy; 2026 Zumgugger</a></p>
         </footer>
     </div>
 
