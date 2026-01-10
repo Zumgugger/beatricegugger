@@ -13,8 +13,25 @@
     {% if current_user.is_authenticated %}
     <div class="admin-status-bar">
         Eingeloggt als Administrator
-        <a href="{{ url_for('admin.logout') }}" class="admin-logout-link">Abmelden</a>
+        <div class="admin-dropdown">
+            <a href="{{ url_for('admin.logout') }}" class="admin-logout-link">Abmelden</a>
+            <button class="admin-dropdown-toggle" onclick="this.nextElementSibling.classList.toggle('show')">▼</button>
+            <ul class="admin-dropdown-menu">
+                <li><a href="{{ url_for('admin.dashboard') }}">Admin Panel</a></li>
+                <li><a href="{{ url_for('admin.message_templates') }}">SMS Vorlagen</a></li>
+                <li><a href="{{ url_for('admin.admin_users') }}">Admin Benutzer</a></li>
+            </ul>
+        </div>
     </div>
+    <style>
+        .admin-dropdown { display: inline-flex; align-items: center; position: relative; }
+        .admin-dropdown-toggle { background: none; border: none; color: white; cursor: pointer; padding: 0 8px; font-size: 0.7rem; opacity: 0.7; }
+        .admin-dropdown-toggle:hover { opacity: 1; }
+        .admin-dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #333; border-radius: 4px; min-width: 150px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1000; padding: 5px 0; list-style: none; margin-top: 5px; }
+        .admin-dropdown-menu.show { display: block; }
+        .admin-dropdown-menu li a { display: block; padding: 8px 15px; color: white; text-decoration: none; font-size: 0.85rem; }
+        .admin-dropdown-menu li a:hover { background: #444; }
+    </style>
     {% endif %}
     <div class="site-wrapper">
         {% block header %}

@@ -10,9 +10,10 @@
     </div>
     
     <h1>Nachrichtenvorlagen</h1>
-    <p class="page-description">Hier kannst du die SMS- und E-Mail-Texte bearbeiten. Verwende Platzhalter wie <code>{vorname}</code>, <code>{kurstitel}</code>, etc.</p>
+    <p class="page-description">Hier kannst du deine SMS Texte bearbeiten. Email kann später aktiviert werden. Verwende Platzhalter wie <code>{vorname}</code>, <code>{kurstitel}</code>, etc.</p>
     
-    <div class="template-filters">
+    <!-- Filters hidden for now - SMS only -->
+    <div class="template-filters" style="display: none;">
         <button class="filter-btn active" data-filter="all">Alle</button>
         <button class="filter-btn" data-filter="sms">SMS</button>
         <button class="filter-btn" data-filter="email">E-Mail</button>
@@ -69,6 +70,7 @@
     
     <div class="templates-list">
         {% for template in templates %}
+        {% if template.message_type == 'sms' %}
         <div class="template-card {% if not template.is_active %}inactive{% endif %}" 
              data-template-id="{{ template.id }}" 
              data-type="{{ template.message_type }}">
@@ -89,13 +91,10 @@
                 <button class="btn-icon btn-edit" onclick="editTemplate({{ template.id }}, '{{ template.message_type }}', '{{ template.trigger }}', '{{ template.subject|e if template.subject else '' }}', `{{ template.body|e }}`, {{ 'true' if template.is_active else 'false' }})" title="Vorlage bearbeiten">✏️</button>
             </div>
         </div>
+        {% endif %}
         {% else %}
         <p class="no-items">Keine Vorlagen vorhanden.</p>
         {% endfor %}
-    </div>
-    
-    <div class="page-actions">
-        <a href="{{ url_for('public.index') }}" class="btn btn-secondary">← Zurück zur Startseite</a>
     </div>
 </div>
 
@@ -131,7 +130,7 @@
 .filter-btn {
     padding: 8px 16px;
     border: 2px solid #8B4513;
-    background: white;
+    background: transparent;
     color: #8B4513;
     border-radius: 20px;
     cursor: pointer;
@@ -146,7 +145,7 @@
 }
 
 .available-variables {
-    background: #f9f9f9;
+    background: transparent;
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 25px;
@@ -165,7 +164,8 @@
 }
 
 .variable {
-    background: #e0e0e0;
+    background: transparent;
+    border: 1px solid #8B4513;
     padding: 4px 10px;
     border-radius: 4px;
     font-family: monospace;
@@ -186,7 +186,7 @@
 
 .template-card {
     padding: 15px 20px;
-    background: #f9f9f9;
+    background: transparent;
     border-radius: 8px;
     border-left: 4px solid #8B4513;
 }

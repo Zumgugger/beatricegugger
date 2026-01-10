@@ -5,6 +5,20 @@
 
 ---
 
+## Server Information
+
+| Property | Value |
+|----------|-------|
+| **OS** | Ubuntu 24.04.3 LTS |
+| **Kernel** | 6.8.0-90-generic x86_64 |
+| **IPv4 Address** | 185.66.108.95 |
+| **Secondary IP** | 185.66.109.240 |
+| **Disk** | 42.93GB (47.8% used) |
+| **Memory Usage** | ~58% |
+| **Domain** | beatricegugger.ch |
+
+---
+
 ## 1. Pre-Development Checklist
 
 ### 1.1 Feature Requirements - Ask These FIRST

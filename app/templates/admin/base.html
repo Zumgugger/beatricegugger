@@ -22,7 +22,14 @@
                 <li><a href="{{ url_for('admin.art') }}">Art Galerie</a></li>
                 <li><a href="{{ url_for('admin.pages') }}">Seiten</a></li>
                 <li><a href="{{ url_for('admin.navigation') }}">Navigation</a></li>
-                <li><a href="{{ url_for('admin.logout') }}">Abmelden</a></li>
+                <li class="dropdown">
+                    <a href="{{ url_for('admin.logout') }}">Abmelden</a>
+                    <button class="dropdown-toggle" onclick="toggleDropdown(this)">▼</button>
+                    <ul class="dropdown-menu">
+                        <li><a href="{{ url_for('admin.message_templates') }}">SMS Vorlagen</a></li>
+                        <li><a href="{{ url_for('admin.admin_users') }}">Admin Benutzer</a></li>
+                    </ul>
+                </li>
             </ul>
         </nav>
         
@@ -41,6 +48,28 @@
         </main>
     </div>
     
+    <style>
+        .admin-menu li.dropdown { display: flex; align-items: center; }
+        .admin-menu li.dropdown > a { flex: 1; display: block; }
+        .dropdown-toggle { background: none; border: none; color: white; cursor: pointer; padding: 10px; font-size: 0.8rem; opacity: 0.7; }
+        .dropdown-toggle:hover { opacity: 1; background: #34495e; border-radius: 4px; }
+        .dropdown-menu { display: none; position: absolute; left: 100%; top: 0; background: #34495e; border-radius: 4px; min-width: 150px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 100; padding: 5px 0; list-style: none; margin-left: 5px; }
+        .dropdown-menu.show { display: block; }
+        .dropdown-menu li { margin-bottom: 0 !important; }
+        .dropdown-menu li a { display: block; padding: 10px 15px; color: white; text-decoration: none; font-size: 0.85rem; }
+        .dropdown-menu li a:hover { background: #4a6278; }
+    </style>
+    <script>
+        function toggleDropdown(btn) {
+            const menu = btn.nextElementSibling;
+            menu.classList.toggle('show');
+        }
+        document.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('dropdown-toggle')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+            }
+        });
+    </script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
     <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
