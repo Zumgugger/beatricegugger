@@ -1,5 +1,6 @@
 """Admin routes and authentication."""
 import logging
+import re
 from flask import (
     Blueprint,
     render_template,
@@ -22,6 +23,24 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+
+def validate_phone(phone: str) -> bool:
+    """Validate phone number - flexible format allowing Swiss/international numbers."""
+    if not phone:
+        return False
+    # Remove all formatting characters: spaces, dashes, parentheses
+    cleaned = re.sub(r'[\s\-\(\)]', '', phone)
+    # Allow optional + at start, then 9-15 digits
+    return bool(re.match(r'^\+?\d{9,15}$', cleaned))
+
+
+def validate_email(email: str) -> bool:
+    """Basic email validation."""
+    if not email:
+        return True  # Email is optional
+    pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+    return bool(re.match(pattern, email))
 
 
 def allowed_file(filename: str) -> bool:
@@ -544,10 +563,21 @@ def api_update_registration(registration_id):
     registration = CourseRegistration.query.get_or_404(registration_id)
     data = request.get_json()
     
+    telefonnummer = data.get('telefonnummer', registration.telefonnummer)
+    email = data.get('email') or None
+    
+    # Validate phone
+    if not validate_phone(telefonnummer):
+        return jsonify({'success': False, 'error': 'Ungültige Telefonnummer'}), 400
+    
+    # Validate email if provided
+    if email and not validate_email(email):
+        return jsonify({'success': False, 'error': 'Ungültige E-Mail-Adresse'}), 400
+    
     registration.vorname = data.get('vorname', registration.vorname)
     registration.name = data.get('name', registration.name)
-    registration.telefonnummer = data.get('telefonnummer', registration.telefonnummer)
-    registration.email = data.get('email') or None
+    registration.telefonnummer = telefonnummer
+    registration.email = email
     
     db.session.commit()
     return jsonify({'success': True})
@@ -560,12 +590,23 @@ def api_create_registration(course_id):
     course = Course.query.get_or_404(course_id)
     data = request.get_json()
     
+    telefonnummer = data.get('telefonnummer', '').strip()
+    email = data.get('email') or None
+    
+    # Validate phone
+    if not validate_phone(telefonnummer):
+        return jsonify({'success': False, 'error': 'Ungültige Telefonnummer'}), 400
+    
+    # Validate email if provided
+    if email and not validate_email(email):
+        return jsonify({'success': False, 'error': 'Ungültige E-Mail-Adresse'}), 400
+    
     registration = CourseRegistration(
         course_id=course_id,
         vorname=data.get('vorname', '').strip(),
         name=data.get('name', '').strip(),
-        telefonnummer=data.get('telefonnummer', '').strip(),
-        email=data.get('email') or None
+        telefonnummer=telefonnummer,
+        email=email
     )
     
     db.session.add(registration)

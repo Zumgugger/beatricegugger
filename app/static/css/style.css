@@ -998,6 +998,13 @@ body.homepage .footer {
     font-family: 'Courier Prime', monospace;
 }
 
+.form-hint {
+    display: block;
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 4px;
+}
+
 /* Registration Form */
 .registration-form {
     margin-top: 40px;

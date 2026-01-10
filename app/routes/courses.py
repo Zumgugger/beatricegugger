@@ -1,5 +1,6 @@
 """Course routes (listing, detail, registration)."""
 import logging
+import re
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user
 from app import db, mail, limiter
@@ -10,6 +11,30 @@ import os
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('courses', __name__, url_prefix='/angebot')
+
+
+def validate_phone(phone: str) -> bool:
+    """Validate phone number - flexible format.
+    
+    Accepts: +41 79 123 45 67, 079 123 45 67, 0791234567, +41(0)79 123 45 67, etc.
+    """
+    if not phone:
+        return False
+    # Remove all formatting characters
+    cleaned = re.sub(r'[\s\-\.\(\)]+', '', phone)
+    # Should be digits, optionally starting with +
+    if not re.match(r'^\+?\d{9,15}$', cleaned):
+        return False
+    return True
+
+
+def validate_email(email: str) -> bool:
+    """Basic email validation."""
+    if not email:
+        return True  # Email is optional
+    # Basic pattern: something@something.something
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email))
 
 
 @bp.route('/')
@@ -63,6 +88,16 @@ def register(course_id):
     # Validate required fields
     if not all([vorname, name, telefonnummer]):
         flash('Bitte füllen Sie alle Pflichtfelder aus.', 'error')
+        return redirect(url_for('courses.detail', course_id=course_id))
+    
+    # Validate phone number
+    if not validate_phone(telefonnummer):
+        flash('Bitte geben Sie eine gültige Telefonnummer ein.', 'error')
+        return redirect(url_for('courses.detail', course_id=course_id))
+    
+    # Validate email if provided
+    if email and not validate_email(email):
+        flash('Bitte geben Sie eine gültige E-Mail-Adresse ein.', 'error')
         return redirect(url_for('courses.detail', course_id=course_id))
     
     # Create registration

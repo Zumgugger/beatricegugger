@@ -41,7 +41,8 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="add_telefonnummer">Telefonnummer *</label>
-                    <input type="tel" name="telefonnummer" id="add_telefonnummer" required>
+                    <input type="tel" name="telefonnummer" id="add_telefonnummer" required placeholder="z.B. +41 79 123 45 67">
+                    <small class="form-hint">Schweizer oder internationale Nummer</small>
                 </div>
                 <div class="form-group">
                     <label for="add_email">E-Mail (optional)</label>
@@ -73,7 +74,8 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="edit_telefonnummer">Telefonnummer *</label>
-                    <input type="tel" name="telefonnummer" id="edit_telefonnummer" required>
+                    <input type="tel" name="telefonnummer" id="edit_telefonnummer" required placeholder="z.B. +41 79 123 45 67">
+                    <small class="form-hint">Schweizer oder internationale Nummer</small>
                 </div>
                 <div class="form-group">
                     <label for="edit_email">E-Mail (optional)</label>
@@ -266,9 +268,36 @@ function editRegistration(id, vorname, name, telefonnummer, email) {
     document.getElementById('edit_email').value = email;
 }
 
+function validatePhone(phone) {
+    // Remove all formatting: spaces, dashes, parentheses
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+    // Allow + at start, then 9-15 digits
+    return /^\+?\d{9,15}$/.test(cleaned);
+}
+
+function validateEmail(email) {
+    if (!email) return true; // Email is optional
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 async function submitAddRegistration(event) {
     event.preventDefault();
     const form = event.target;
+    
+    // Validate phone
+    if (!validatePhone(form.telefonnummer.value)) {
+        alert('Bitte geben Sie eine gültige Telefonnummer ein (z.B. +41 79 123 45 67 oder 079 123 45 67)');
+        form.telefonnummer.focus();
+        return;
+    }
+    
+    // Validate email if provided
+    if (form.email.value && !validateEmail(form.email.value)) {
+        alert('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+        form.email.focus();
+        return;
+    }
+    
     const data = {
         vorname: form.vorname.value,
         name: form.name.value,
@@ -296,6 +325,21 @@ async function submitAddRegistration(event) {
 async function submitEditRegistration(event) {
     event.preventDefault();
     const form = event.target;
+    
+    // Validate phone
+    if (!validatePhone(form.telefonnummer.value)) {
+        alert('Bitte geben Sie eine gültige Telefonnummer ein (z.B. +41 79 123 45 67 oder 079 123 45 67)');
+        form.telefonnummer.focus();
+        return;
+    }
+    
+    // Validate email if provided
+    if (form.email.value && !validateEmail(form.email.value)) {
+        alert('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+        form.email.focus();
+        return;
+    }
+    
     const registrationId = document.getElementById('edit_registration_id').value;
     const data = {
         vorname: form.vorname.value,

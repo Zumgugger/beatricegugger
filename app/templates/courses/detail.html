@@ -37,7 +37,7 @@
     {% else %}
     <div class="registration-form">
         <h2>Anmeldung</h2>
-        <form method="POST" action="{{ url_for('courses.register', course_id=course.id) }}">
+        <form method="POST" action="{{ url_for('courses.register', course_id=course.id) }}" onsubmit="return validateRegistrationForm(this)">
             <div class="form-group">
                 <label for="vorname">Vorname *</label>
                 <input type="text" id="vorname" name="vorname" required>
@@ -50,7 +50,9 @@
             
             <div class="form-group">
                 <label for="telefonnummer">Telefonnummer *</label>
-                <input type="tel" id="telefonnummer" name="telefonnummer" required>
+                <input type="tel" id="telefonnummer" name="telefonnummer" required 
+                       placeholder="z.B. +41 79 123 45 67">
+                <small class="form-hint">Schweizer oder internationale Nummer</small>
             </div>
             
             <div class="form-group">
@@ -61,6 +63,30 @@
             <button type="submit" class="btn btn-primary">Jetzt anmelden</button>
         </form>
     </div>
+    
+    <script>
+    function validateRegistrationForm(form) {
+        const phone = form.telefonnummer.value.trim();
+        const email = form.email.value.trim();
+        
+        // Validate phone - remove formatting and check
+        const cleanedPhone = phone.replace(/[\s\-\.\(\)]+/g, '');
+        if (!/^\+?\d{9,15}$/.test(cleanedPhone)) {
+            alert('Bitte geben Sie eine gültige Telefonnummer ein.');
+            form.telefonnummer.focus();
+            return false;
+        }
+        
+        // Validate email if provided
+        if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+            alert('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+            form.email.focus();
+            return false;
+        }
+        
+        return true;
+    }
+    </script>
     {% endif %}
 </div>
 {% endblock %}
