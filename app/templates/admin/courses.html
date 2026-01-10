@@ -2,9 +2,33 @@
 {% block title %}Kurse - Admin{% endblock %}
 {% block admin_content %}
 <h1>Kurse</h1>
-<div class="table-actions">
-    <a class="btn btn-primary" href="#" aria-disabled="true">Neuen Kurs anlegen (kommt noch)</a>
-</div>
+<form class="form-grid" method="POST" action="{{ url_for('admin.create_course') }}" enctype="multipart/form-data">
+    <h2>Neuen Kurs anlegen</h2>
+    <label>Titel*
+        <input type="text" name="title" required>
+    </label>
+    <label>Beschreibung
+        <textarea name="description" class="wysiwyg" rows="6"></textarea>
+    </label>
+    <label>Datum & Zeit
+        <input type="datetime-local" name="date">
+    </label>
+    <label>Ort
+        <input type="text" name="location">
+    </label>
+    <label>Max. Teilnehmer
+        <input type="number" name="max_participants" min="0">
+    </label>
+    <label>Bild
+        <input type="file" name="image" accept="image/*">
+    </label>
+    <label class="checkbox">
+        <input type="checkbox" name="is_active" value="1" checked>
+        Aktiv
+    </label>
+    <button type="submit" class="btn btn-primary">Kurs speichern</button>
+</form>
+
 <table>
     <thead>
         <tr>
@@ -26,7 +50,10 @@
             <td>{{ 'Aktiv' if course.is_active else 'Inaktiv' }}</td>
             <td>
                 <a class="btn" href="{{ url_for('admin.course_registrations', course_id=course.id) }}">Anmeldungen</a>
-                <a class="btn" href="#" aria-disabled="true">Bearbeiten (kommt)</a>
+                <a class="btn" href="{{ url_for('admin.edit_course', course_id=course.id) }}">Bearbeiten</a>
+                <form method="POST" action="{{ url_for('admin.delete_course', course_id=course.id) }}" style="display:inline" onsubmit="return confirm('Diesen Kurs löschen?');">
+                    <button type="submit" class="btn btn-danger">Löschen</button>
+                </form>
             </td>
         </tr>
         {% else %}

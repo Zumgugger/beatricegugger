@@ -18,7 +18,7 @@
             <div class="gallery-images">
                 {% for image in images %}
                 <div class="gallery-image {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-                    <img src="{{ url_for('static', filename='../' ~ image.image_path) }}" alt="{{ image.caption or category.title }}">
+                    <img src="{{ url_for('uploaded_file', filename=image.image_path) }}" alt="{{ image.caption or category.title }}">
                     {% if image.caption %}
                     <p class="image-caption">{{ image.caption }}</p>
                     {% endif %}

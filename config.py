@@ -22,8 +22,10 @@ class Config:
     
     # File uploads
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB
-    UPLOAD_FOLDER = basedir / 'uploads'
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    _upload_env = os.environ.get('UPLOAD_FOLDER')
+    UPLOAD_FOLDER = Path(_upload_env) if _upload_env else basedir / 'uploads'
+    _allowed_env = os.environ.get('ALLOWED_EXTENSIONS')
+    ALLOWED_EXTENSIONS = {ext.strip().lower() for ext in _allowed_env.split(',')} if _allowed_env else {'png', 'jpg', 'jpeg', 'gif'}
     
     # Email configuration
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'localhost')
@@ -33,6 +35,7 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@beatricegugger.ch')
+    MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', 'False').lower() == 'true'
     
     # Admin settings
     ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@beatricegugger.ch')
@@ -56,8 +59,17 @@ class ProductionConfig(Config):
     TESTING = False
 
 
+class TestingConfig(Config):
+    """Testing configuration."""
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    WTF_CSRF_ENABLED = False
+    MAIL_SUPPRESS_SEND = True
+
+
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'testing': TestingConfig,
     'default': DevelopmentConfig
 }

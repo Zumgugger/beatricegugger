@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block title %}Kurs bearbeiten - Admin{% endblock %}
+{% block admin_content %}
+<h1>Kurs bearbeiten</h1>
+<form method="POST" action="{{ url_for('admin.edit_course', course_id=course.id) }}" enctype="multipart/form-data" class="form-grid">
+    <label>Titel*
+        <input type="text" name="title" value="{{ course.title }}" required>
+    </label>
+    <label>Beschreibung
+        <textarea name="description" class="wysiwyg" rows="8">{{ course.description }}</textarea>
+    </label>
+    <label>Datum & Zeit
+        <input type="datetime-local" name="date" value="{% if course.date %}{{ course.date.strftime('%Y-%m-%dT%H:%M') }}{% endif %}">
+    </label>
+    <label>Ort
+        <input type="text" name="location" value="{{ course.location or '' }}">
+    </label>
+    <label>Max. Teilnehmer
+        <input type="number" name="max_participants" min="0" value="{{ course.max_participants or '' }}">
+    </label>
+    <label>Bild
+        <input type="file" name="image" accept="image/*">
+        {% if course.image_path %}
+        <small>Aktuelles Bild: {{ course.image_path }}</small>
+        {% endif %}
+    </label>
+    <label class="checkbox">
+        <input type="checkbox" name="is_active" value="1" {% if course.is_active %}checked{% endif %}>
+        Aktiv
+    </label>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Speichern</button>
+        <a class="btn" href="{{ url_for('admin.courses') }}">Abbrechen</a>
+    </div>
+</form>
+{% endblock %}

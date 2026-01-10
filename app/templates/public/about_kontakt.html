@@ -5,17 +5,50 @@
 {% block content %}
 <div class="about-page">
     {% if page %}
-        <h1>{{ page.title }}</h1>
+        <!-- Kontakt Section -->
+        <section class="kontakt-section">
+            <h1 class="editable-text" data-entity="page" data-entity-id="{{ page.id }}" data-field="title" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">Kontakt</h1>
+            
+            <div class="kontakt-content">
+                <div class="kontakt-image editable-image" data-entity="page" data-entity-id="{{ page.id }}" data-field="image" style="cursor: pointer;">
+                    {% if page.image_path %}
+                        <img src="{{ url_for('uploaded_file', filename=page.image_path) }}" alt="Kontakt Bild">
+                    {% elif current_user.is_authenticated %}
+                        <div class="image-placeholder">
+                            Klicken Sie hier, um ein Bild hinzuzufügen
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="kontakt-links">
+                    <a href="mailto:beatricegugger@hotmail.com" class="contact-item">
+                        <img src="{{ url_for('static', filename='images/Icon EMail.png') }}" alt="Email">
+                        <span>beatricegugger@hotmail.com</span>
+                    </a>
+                    <a href="tel:+41797134974" class="contact-item">
+                        <img src="{{ url_for('static', filename='images/Icon Telefon neu.png') }}" alt="Telefon">
+                        <span>+41 79 713 49 74</span>
+                    </a>
+                    <a href="https://instagram.com/beatricegugger" target="_blank" rel="noopener noreferrer" class="contact-item">
+                        <img src="{{ url_for('static', filename='images/Icon Insta 2.png') }}" alt="Instagram">
+                        <span>@beatricegugger</span>
+                    </a>
+                    <a href="https://maps.google.com/maps?q=Helte+4,+3636+L%C3%A4ngenb%C3%BChl" target="_blank" rel="noopener noreferrer" class="contact-item">
+                        <img src="{{ url_for('static', filename='images/Icon Haus.png') }}" alt="Adresse">
+                        <span>Helte 4, 3636 Längenbühl</span>
+                    </a>
+                </div>
+            </div>
+        </section>
         
-        {% if page.image_path %}
-        <div class="about-image">
-            <img src="{{ url_for('static', filename='../' ~ page.image_path) }}" alt="{{ page.title }}">
-        </div>
-        {% endif %}
-        
-        <div class="about-content">
-            {{ page.content|safe }}
-        </div>
+        <!-- Über mich Section -->
+        <section class="ueber-mich-section">
+            <h2>Über mich</h2>
+            
+            <div class="ueber-mich-content editable-text" data-entity="page" data-entity-id="{{ page.id }}" data-field="content" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">
+                {{ page.content|safe }}
+            </div>
+        </section>
     {% else %}
         <h1>About & Kontakt</h1>
         <p>Diese Seite wird derzeit bearbeitet.</p>

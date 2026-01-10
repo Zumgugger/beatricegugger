@@ -2,6 +2,25 @@
 {% block title %}Art Kategorien - Admin{% endblock %}
 {% block admin_content %}
 <h1>Art Kategorien</h1>
+<form class="form-grid" method="POST" action="{{ url_for('admin.create_art_category') }}" enctype="multipart/form-data">
+    <h2>Neue Kategorie</h2>
+    <label>Titel*
+        <input type="text" name="title" required>
+    </label>
+    <label>Beschreibung
+        <textarea name="description" rows="3"></textarea>
+    </label>
+    <label>Reihenfolge
+        <input type="number" name="order" value="0" min="0">
+    </label>
+    <label>Featured Bild
+        <input type="file" name="featured_image" accept="image/*">
+    </label>
+    <label class="checkbox">
+        <input type="checkbox" name="is_active" value="1" checked> Aktiv
+    </label>
+    <button type="submit" class="btn btn-primary">Speichern</button>
+</form>
 <table>
     <thead>
         <tr>
@@ -10,6 +29,7 @@
             <th>Reihenfolge</th>
             <th>Status</th>
             <th>Bilder</th>
+            <th>Aktionen</th>
         </tr>
     </thead>
     <tbody>
@@ -20,9 +40,25 @@
             <td>{{ category.order }}</td>
             <td>{{ 'Aktiv' if category.is_active else 'Inaktiv' }}</td>
             <td>{{ category.images.count() }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('admin.update_art_category', category_id=category.id) }}" enctype="multipart/form-data" class="form-inline">
+                    <input type="text" name="title" value="{{ category.title }}" required>
+                    <input type="text" name="description" value="{{ category.description or '' }}">
+                    <input type="number" name="order" value="{{ category.order }}" min="0">
+                    <input type="file" name="featured_image" accept="image/*">
+                    <label class="checkbox">
+                        <input type="checkbox" name="is_active" value="1" {% if category.is_active %}checked{% endif %}> Aktiv
+                    </label>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </form>
+                <a class="btn" href="{{ url_for('admin.manage_art_images', category_id=category.id) }}">Bilder verwalten</a>
+                <form method="POST" action="{{ url_for('admin.delete_art_category', category_id=category.id) }}" onsubmit="return confirm('Kategorie löschen?');" class="form-inline">
+                    <button type="submit" class="btn btn-danger">Löschen</button>
+                </form>
+            </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">Keine Kategorien vorhanden.</td></tr>
+        <tr><td colspan="6">Keine Kategorien vorhanden.</td></tr>
         {% endfor %}
     </tbody>
 </table>

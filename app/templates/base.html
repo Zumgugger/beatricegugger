@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Beatrice Gugger{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Blumen Icon 32x32.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body data-is-admin="{% if current_user.is_authenticated %}1{% else %}0{% endif %}">
+    {% if current_user.is_authenticated %}
+    <div class="admin-status-bar">Eingeloggt als Administrator</div>
+    {% endif %}
     <div class="site-wrapper">
         <!-- Logo -->
         <div class="logo">
             <a href="{{ url_for('public.index') }}">
-                <img src="{{ url_for('static', filename='images/Blumen Icon 256x256.png') }}" alt="Beatrice Gugger">
+                <img src="{{ url_for('static', filename='images/Blumen und beatricegugger.png') }}" alt="Beatrice Gugger">
             </a>
         </div>
 
@@ -40,7 +44,11 @@
                         {% endif %}
                         <a href="{{ url }}">
                             {% if item.icon_path %}
+                            {% if item.icon_path.startswith('navigation/') or item.icon_path.startswith('uploads/') %}
+                            <img src="{{ url_for('uploaded_file', filename=item.icon_path.split('uploads/', 1)[-1]) if item.icon_path.startswith('uploads/') else url_for('uploaded_file', filename=item.icon_path) }}" alt="{{ item.title }}">
+                            {% else %}
                             <img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}">
+                            {% endif %}
                             {% else %}
                             {{ item.title }}
                             {% endif %}

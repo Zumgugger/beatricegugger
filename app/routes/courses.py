@@ -1,5 +1,5 @@
 """Course routes (listing, detail, registration)."""
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from app import db, mail
 from app.models import Course, CourseRegistration, NavigationItem
 from flask_mail import Message
@@ -65,6 +65,12 @@ def register(course_id):
             db.session.commit()
         except Exception as e:
             print(f"Error sending email: {e}")
+
+    # Notify admin
+    try:
+        notify_admin_registration(registration, course)
+    except Exception as e:
+        print(f"Error notifying admin: {e}")
     
     flash('Vielen Dank für Ihre Anmeldung!', 'success')
     return redirect(url_for('courses.detail', course_id=course_id))
@@ -97,4 +103,31 @@ Beatrice Gugger
         body=body
     )
     
+    mail.send(msg)
+
+
+def notify_admin_registration(registration, course):
+    """Send notification to admin about a new registration."""
+    admin_email = current_app.config.get('ADMIN_EMAIL')
+    if not admin_email:
+        return
+
+    subject = f'Neue Kursanmeldung: {course.title}'
+    body = f"""
+Neue Anmeldung eingegangen:
+
+Kurs: {course.title}
+Teilnehmer: {registration.vorname} {registration.name}
+Telefon: {registration.telefonnummer}
+Email: {registration.email or 'n/a'}
+
+Zur Verwaltung: {url_for('admin.course_registrations', course_id=course.id, _external=True)}
+"""
+
+    msg = Message(
+        subject=subject,
+        recipients=[admin_email],
+        body=body,
+        reply_to=registration.email or None
+    )
     mail.send(msg)

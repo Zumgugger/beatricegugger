@@ -18,10 +18,6 @@ def index():
 @bp.route('/about-kontakt')
 def about_kontakt():
     """About/Kontakt page."""
-    try:
-        page = Page.query.filter_by(slug='about-kontakt').first()
-        nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
-    except:
-        page = None
-        nav_items = []
+    page = Page.query.filter_by(slug='about-kontakt').first()
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
     return render_template('public/about_kontakt.html', page=page, nav_items=nav_items)

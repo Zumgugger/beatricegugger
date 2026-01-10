@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% block title %}Bilder verwalten - Admin{% endblock %}
+{% block admin_content %}
+<h1>Bilder für {{ category.title }}</h1>
+<form method="POST" enctype="multipart/form-data" action="{{ url_for('admin.manage_art_images', category_id=category.id) }}" class="form-inline">
+    <label>Bild*
+        <input type="file" name="image" accept="image/*" required>
+    </label>
+    <label>Beschriftung
+        <input type="text" name="caption" placeholder="Optional">
+    </label>
+    <label>Reihenfolge
+        <input type="number" name="order" value="0" min="0">
+    </label>
+    <button type="submit" class="btn btn-primary">Hinzufügen</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Vorschau</th>
+            <th>Caption</th>
+            <th>Reihenfolge</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for image in images %}
+        <tr>
+            <td><img src="{{ url_for('uploaded_file', filename=image.image_path) }}" alt="{{ image.caption or category.title }}" style="height:80px;"></td>
+            <td>{{ image.caption or '-' }}</td>
+            <td>{{ image.order }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('admin.delete_art_image', image_id=image.id) }}" onsubmit="return confirm('Bild löschen?');">
+                    <button type="submit" class="btn btn-danger">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Keine Bilder vorhanden.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a class="btn" href="{{ url_for('admin.art') }}">Zurück</a>
+{% endblock %}

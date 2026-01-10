@@ -2,6 +2,26 @@
 {% block title %}Navigation - Admin{% endblock %}
 {% block admin_content %}
 <h1>Navigation</h1>
+<form class="form-grid" method="POST" action="{{ url_for('admin.create_navigation') }}" enctype="multipart/form-data">
+    <h2>Neuen Navigationseintrag anlegen</h2>
+    <label>Titel*
+        <input type="text" name="title" required>
+    </label>
+    <label>Slug*
+        <input type="text" name="slug" placeholder="about-kontakt" required>
+    </label>
+    <label>Reihenfolge
+        <input type="number" name="order" value="0" min="0">
+    </label>
+    <label>Icon
+        <input type="file" name="icon" accept="image/*">
+    </label>
+    <label class="checkbox">
+        <input type="checkbox" name="is_active" value="1" checked>
+        Aktiv
+    </label>
+    <button type="submit" class="btn btn-primary">Speichern</button>
+</form>
 <table>
     <thead>
         <tr>
@@ -10,6 +30,7 @@
             <th>Reihenfolge</th>
             <th>Icon</th>
             <th>Status</th>
+            <th>Aktionen</th>
         </tr>
     </thead>
     <tbody>
@@ -18,11 +39,26 @@
             <td>{{ item.title }}</td>
             <td>{{ item.slug }}</td>
             <td>{{ item.order }}</td>
-            <td>{% if item.icon_path %}<img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}" style="height:40px;">{% else %}-{% endif %}</td>
+            <td>{% if item.icon_path %}{% if item.icon_path.startswith('navigation/') or item.icon_path.startswith('uploads/') %}<img src="{{ url_for('uploaded_file', filename=item.icon_path.split('uploads/', 1)[-1]) if item.icon_path.startswith('uploads/') else url_for('uploaded_file', filename=item.icon_path) }}" alt="{{ item.title }}" style="height:40px;">{% else %}<img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}" style="height:40px;">{% endif %}{% else %}-{% endif %}</td>
             <td>{{ 'Aktiv' if item.is_active else 'Inaktiv' }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('admin.update_navigation', item_id=item.id) }}" enctype="multipart/form-data" class="form-inline">
+                    <input type="text" name="title" value="{{ item.title }}" required>
+                    <input type="text" name="slug" value="{{ item.slug }}" required>
+                    <input type="number" name="order" value="{{ item.order }}" min="0">
+                    <input type="file" name="icon" accept="image/*">
+                    <label class="checkbox">
+                        <input type="checkbox" name="is_active" value="1" {% if item.is_active %}checked{% endif %}> Aktiv
+                    </label>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.delete_navigation', item_id=item.id) }}" onsubmit="return confirm('Eintrag löschen?');" class="form-inline">
+                    <button type="submit" class="btn btn-danger">Löschen</button>
+                </form>
+            </td>
         </tr>
         {% else %}
-        <tr><td colspan="5">Keine Navigationseinträge vorhanden.</td></tr>
+        <tr><td colspan="6">Keine Navigationseinträge vorhanden.</td></tr>
         {% endfor %}
     </tbody>
 </table>

@@ -4,15 +4,15 @@
 
 {% block content %}
 <div class="course-detail">
-    <h1>{{ course.title }}</h1>
+    <h1 class="editable-text" data-entity="course" data-entity-id="{{ course.id }}" data-field="title" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">{{ course.title }}</h1>
     
     {% if course.image_path %}
-    <div class="course-image">
-        <img src="{{ url_for('static', filename='../' ~ course.image_path) }}" alt="{{ course.title }}">
+    <div class="course-image editable-image" data-entity="course" data-entity-id="{{ course.id }}" data-field="image">
+        <img src="{{ url_for('uploaded_file', filename=course.image_path) }}" alt="{{ course.title }}">
     </div>
     {% endif %}
     
-    <div class="course-description">
+    <div class="course-description editable-text" data-entity="course" data-entity-id="{{ course.id }}" data-field="content" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">
         {{ course.description|safe }}
     </div>
     

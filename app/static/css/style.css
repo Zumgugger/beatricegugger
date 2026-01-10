@@ -6,13 +6,59 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Courier Prime', sans-serif;
     line-height: 1.6;
     color: #333;
     background-image: url('../images/Hintergrund Seidenpapier.png');
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
+}
+
+.admin-status-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1200;
+    background: #f1f1f1;
+    color: #333;
+    border-bottom: 1px solid #ccc;
+    padding: 8px 16px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.editable-text[contenteditable="true"] {
+    outline: 2px dashed transparent;
+    transition: outline-color 0.2s, background-color 0.2s;
+}
+
+.editable-text[contenteditable="true"]:focus {
+    outline-color: #4a7c59;
+    background-color: rgba(74, 124, 89, 0.06);
+}
+
+.editable-image {
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.editable-image::after {
+    content: 'Bild ändern';
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.editable-image:hover::after {
+    opacity: 1;
 }
 
 .site-wrapper {
@@ -65,7 +111,7 @@ body {
 }
 
 .nav-menu li a img {
-    height: 80px;
+    height: 160px;
     width: auto;
     transition: transform 0.3s;
 }
@@ -288,6 +334,96 @@ body {
     font-size: 1.2rem;
 }
 
+/* About & Kontakt Page */
+.about-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.kontakt-section {
+    margin-bottom: 60px;
+}
+
+.kontakt-section h1 {
+    margin-bottom: 30px;
+}
+
+.kontakt-content {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.kontakt-image {
+    flex: 1;
+    max-width: 400px;
+}
+
+.kontakt-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.kontakt-image .image-placeholder {
+    padding: 80px 20px;
+    text-align: center;
+    border: 2px dashed #ccc;
+    color: #999;
+    font-size: 14px;
+    border-radius: 8px;
+}
+
+.kontakt-links {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ueber-mich-section {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.ueber-mich-section h2 {
+    margin-bottom: 20px;
+}
+
+.ueber-mich-content {
+    line-height: 1.8;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: transparent;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: none;
+}
+
+.contact-item:hover {
+    transform: translateY(-2px);
+    box-shadow: none;
+}
+
+.contact-item img {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.contact-item span {
+    font-weight: 500;
+}
+
 /* Footer */
 .footer {
     text-align: center;
@@ -314,5 +450,18 @@ body {
     .gallery-nav {
         padding: 10px;
         font-size: 1.5rem;
+    }
+    
+    /* About page mobile */
+    .kontakt-content {
+        flex-direction: column;
+    }
+    
+    .kontakt-image {
+        max-width: 100%;
+    }
+    
+    .kontakt-links {
+        width: 100%;
     }
 }

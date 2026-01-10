@@ -10,14 +10,14 @@
         {% for category in categories %}
         <div class="category-card">
             {% if category.featured_image_path %}
-            <div class="category-image">
-                <img src="{{ url_for('static', filename='../' ~ category.featured_image_path) }}" alt="{{ category.title }}">
+            <div class="category-image editable-image" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="image">
+                <img src="{{ url_for('uploaded_file', filename=category.featured_image_path) }}" alt="{{ category.title }}">
             </div>
             {% endif %}
             
             <div class="category-info">
-                <h2>{{ category.title }}</h2>
-                <p>{{ category.description }}</p>
+                <h2 class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="title" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">{{ category.title }}</h2>
+                <p class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="description" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">{{ category.description }}</p>
                 <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="btn btn-primary">Galerie ansehen</a>
             </div>
         </div>
