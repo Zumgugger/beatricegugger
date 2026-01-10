@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% block title %}Navigation - Admin{% endblock %}
+{% block admin_content %}
+<h1>Navigation</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Titel</th>
+            <th>Slug</th>
+            <th>Reihenfolge</th>
+            <th>Icon</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in nav_items %}
+        <tr>
+            <td>{{ item.title }}</td>
+            <td>{{ item.slug }}</td>
+            <td>{{ item.order }}</td>
+            <td>{% if item.icon_path %}<img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}" style="height:40px;">{% else %}-{% endif %}</td>
+            <td>{{ 'Aktiv' if item.is_active else 'Inaktiv' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Keine Navigationseinträge vorhanden.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% block title %}Art Kategorien - Admin{% endblock %}
+{% block admin_content %}
+<h1>Art Kategorien</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Titel</th>
+            <th>Beschreibung</th>
+            <th>Reihenfolge</th>
+            <th>Status</th>
+            <th>Bilder</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for category in categories %}
+        <tr>
+            <td>{{ category.title }}</td>
+            <td>{{ category.description or '-' }}</td>
+            <td>{{ category.order }}</td>
+            <td>{{ 'Aktiv' if category.is_active else 'Inaktiv' }}</td>
+            <td>{{ category.images.count() }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Keine Kategorien vorhanden.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

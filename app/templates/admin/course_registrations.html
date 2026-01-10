@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% block title %}Anmeldungen - Admin{% endblock %}
+{% block admin_content %}
+<h1>Anmeldungen: {{ course.title }}</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Datum</th>
+            <th>Name</th>
+            <th>Telefon</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reg in registrations %}
+        <tr>
+            <td>{{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>{{ reg.vorname }} {{ reg.name }}</td>
+            <td>{{ reg.telefonnummer }}</td>
+            <td>{{ reg.email or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Keine Anmeldungen vorhanden.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a class="btn" href="{{ url_for('admin.courses') }}">Zurück</a>
+{% endblock %}

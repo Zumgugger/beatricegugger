@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block title %}Seiten - Admin{% endblock %}
+{% block admin_content %}
+<h1>Seiten</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Titel</th>
+            <th>Slug</th>
+            <th>Zuletzt aktualisiert</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for page in pages %}
+        <tr>
+            <td>{{ page.title }}</td>
+            <td>{{ page.slug }}</td>
+            <td>{% if page.updated_at %}{{ page.updated_at.strftime('%d.%m.%Y %H:%M') }}{% else %}-{% endif %}</td>
+            <td><a class="btn" href="#" aria-disabled="true">Bearbeiten (kommt)</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Keine Seiten vorhanden.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

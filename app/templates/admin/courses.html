@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+{% block title %}Kurse - Admin{% endblock %}
+{% block admin_content %}
+<h1>Kurse</h1>
+<div class="table-actions">
+    <a class="btn btn-primary" href="#" aria-disabled="true">Neuen Kurs anlegen (kommt noch)</a>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Titel</th>
+            <th>Datum</th>
+            <th>Ort</th>
+            <th>Anmeldungen</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for course in courses %}
+        <tr>
+            <td>{{ course.title }}</td>
+            <td>{% if course.date %}{{ course.date.strftime('%d.%m.%Y %H:%M') }}{% else %}-{% endif %}</td>
+            <td>{{ course.location or '-' }}</td>
+            <td>{{ course.registration_count }}</td>
+            <td>{{ 'Aktiv' if course.is_active else 'Inaktiv' }}</td>
+            <td>
+                <a class="btn" href="{{ url_for('admin.course_registrations', course_id=course.id) }}">Anmeldungen</a>
+                <a class="btn" href="#" aria-disabled="true">Bearbeiten (kommt)</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">Keine Kurse vorhanden.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
