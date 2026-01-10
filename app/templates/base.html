@@ -26,17 +26,28 @@
             </button>
             
             <ul class="nav-menu" id="navMenu">
-                {% for item in nav_items %}
-                <li>
-                    <a href="{{ url_for(item.slug.replace('-', '_')) if item.slug in ['about-kontakt', 'art'] else url_for('courses.index') }}">
-                        {% if item.icon_path %}
-                        <img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}">
+                {% if nav_items %}
+                    {% for item in nav_items %}
+                    <li>
+                        {% if item.slug == 'about-kontakt' %}
+                            {% set url = url_for('public.about_kontakt') %}
+                        {% elif item.slug == 'courses.index' or 'angebot' in item.slug.lower() %}
+                            {% set url = url_for('courses.index') %}
+                        {% elif item.slug == 'art' %}
+                            {% set url = url_for('art.index') %}
                         {% else %}
-                        {{ item.title }}
+                            {% set url = '#' %}
                         {% endif %}
-                    </a>
-                </li>
-                {% endfor %}
+                        <a href="{{ url }}">
+                            {% if item.icon_path %}
+                            <img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}">
+                            {% else %}
+                            {{ item.title }}
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endfor %}
+                {% endif %}
             </ul>
         </nav>
 
