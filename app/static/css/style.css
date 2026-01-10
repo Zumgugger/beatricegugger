@@ -29,9 +29,11 @@ button img {
 }
 
 .admin-status-bar {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 1200;
+    left: 0;
+    right: 0;
+    z-index: 1300;
     background: #6b6b6b;
     color: white;
     border-bottom: 1px solid #555;
@@ -43,6 +45,15 @@ button img {
     justify-content: center;
     align-items: center;
     gap: 20px;
+}
+
+/* When admin bar is present, push header and content down */
+body.admin-logged-in .site-header {
+    top: 37px;
+}
+
+body.admin-logged-in .content {
+    padding-top: 157px;
 }
 
 .admin-logout-link {
@@ -254,6 +265,19 @@ body.homepage .footer {
         right: 0;
         z-index: 1000;
         background: transparent;
+    }
+    
+    /* Admin bar adjustments for mobile */
+    body.admin-logged-in .site-header {
+        top: 37px;
+    }
+    
+    body.admin-logged-in .site-header .hamburger {
+        top: 52px;
+    }
+    
+    body.admin-logged-in .site-header .nav-menu {
+        top: 107px;
     }
     
     .site-header .logo img {
@@ -574,6 +598,19 @@ body.homepage .footer {
     background: rgba(107, 107, 107, 0.1);
 }
 
+.category-card.drag-over {
+    border: 2px dashed #6b6b6b;
+    background: rgba(107, 107, 107, 0.1);
+}
+
+.category-card[draggable="true"] {
+    cursor: grab;
+}
+
+.category-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+
 .workshop-category-card[draggable="true"]:active {
     cursor: grabbing;
 }
@@ -753,7 +790,8 @@ body.homepage .footer {
     display: flex;
     gap: 20px;
     margin-bottom: 8px;
-    font-weight: 500;
+    font-weight: bold;
+    font-size: 1rem;
     color: #333;
 }
 
@@ -769,6 +807,11 @@ body.homepage .footer {
     font-size: 1rem;
     color: #333;
     margin-top: 5px;
+}
+
+.no-items {
+    font-size: 1rem;
+    color: #333;
 }
 
 .course-location a {
@@ -977,7 +1020,7 @@ body.homepage .footer {
     border: none;
     font-size: 1rem;
     transition: background 0.3s;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Courier Prime', monospace;
 }
 
 .btn-primary {
@@ -1097,7 +1140,7 @@ body.homepage .footer {
 .kontakt-content {
     display: flex;
     gap: 40px;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .kontakt-image {
@@ -1174,6 +1217,7 @@ body.homepage .footer {
     padding: 20px;
     background: transparent;
     margin-top: auto;
+    font-size: 1rem;
 }
 
 .footer a {
@@ -1213,6 +1257,14 @@ body.homepage .footer {
     font-weight: bold;
     padding: 5px 12px;
     line-height: 1;
+}
+
+/* Registrations summary */
+.registrations-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 /* Legacy btn-add - kept for compatibility */

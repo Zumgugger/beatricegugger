@@ -16,8 +16,8 @@
         <h3>Neue Kategorie erstellen</h3>
         <form action="{{ url_for('admin.api_create_art_category') }}" method="POST" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="title">Titel *</label>
-                <input type="text" name="title" id="title" required>
+                <label for="title">Titel (optional)</label>
+                <input type="text" name="title" id="title" value="">
             </div>
             <div class="form-group">
                 <label for="description">Beschreibung</label>
@@ -26,10 +26,6 @@
             <div class="form-group">
                 <label for="featured_image">Bild</label>
                 <input type="file" name="featured_image" id="featured_image" accept="image/*">
-            </div>
-            <div class="form-group">
-                <label for="order">Reihenfolge</label>
-                <input type="number" name="order" id="order" value="0" min="0">
             </div>
             <div class="form-group checkbox">
                 <label>
@@ -44,23 +40,26 @@
     </div>
     {% endif %}
     
-    <div class="categories-grid">
+    <div class="categories-grid" id="art-categories-grid">
         {% for category in categories %}
-        <div class="category-card" data-category-id="{{ category.id }}">
+        <div class="category-card" data-category-id="{{ category.id }}" {% if current_user.is_authenticated %}draggable="true"{% endif %}>
             {% if current_user.is_authenticated %}
             <div class="card-admin-controls">
+                <button class="btn-icon btn-change-image" onclick="changeArtCategoryImage({{ category.id }})" title="Bild ändern">📷</button>
                 <button class="btn-icon btn-delete" onclick="deleteCategory({{ category.id }}, '{{ category.title }}')" title="Kategorie löschen">🗑️</button>
             </div>
             {% endif %}
             
             {% if current_user.is_authenticated %}
-            <div class="category-image editable-image" data-entity="art-category" data-entity-id="{{ category.id }}">
-                {% if category.featured_image_path %}
-                <img src="{{ url_for('uploaded_file', filename=category.featured_image_path) }}" alt="{{ category.title }}">
-                {% else %}
-                <div class="image-placeholder">Bild hinzufügen</div>
-                {% endif %}
-            </div>
+            <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="category-link">
+                <div class="category-image">
+                    {% if category.featured_image_path %}
+                    <img src="{{ url_for('uploaded_file', filename=category.featured_image_path) }}" alt="{{ category.title }}">
+                    {% else %}
+                    <div class="image-placeholder">Bild hinzufügen</div>
+                    {% endif %}
+                </div>
+            </a>
             
             <div class="category-info">
                 <h2 class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="title">
@@ -69,7 +68,6 @@
                 <p class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="description">
                     {{ category.description }}
                 </p>
-                <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="btn btn-primary">Galerie ansehen</a>
             </div>
             {% else %}
             <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="category-link">
@@ -94,8 +92,14 @@
     </div>
 </div>
 
+<!-- Hidden file input for image changes -->
+<input type="file" id="art-category-image-input" accept="image/*" style="display: none;">
+
 {% if current_user.is_authenticated %}
 <script>
+const categoryImageInput = document.getElementById('art-category-image-input');
+let currentCategoryId = null;
+
 function showNewCategoryForm() {
     document.getElementById('new-category-form').style.display = 'block';
 }
@@ -103,6 +107,43 @@ function showNewCategoryForm() {
 function hideNewCategoryForm() {
     document.getElementById('new-category-form').style.display = 'none';
 }
+
+function changeArtCategoryImage(categoryId) {
+    currentCategoryId = categoryId;
+    categoryImageInput.click();
+}
+
+categoryImageInput.addEventListener('change', async () => {
+    if (!categoryImageInput.files.length || !currentCategoryId) return;
+    const file = categoryImageInput.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+        const resp = await fetch(`/admin/api/art-category/${currentCategoryId}/image`, { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.success && data.image_path) {
+            const card = document.querySelector(`[data-category-id="${currentCategoryId}"]`);
+            const img = card.querySelector('.category-image img');
+            if (img) {
+                img.src = `/uploads/${data.image_path}?t=${Date.now()}`;
+            } else {
+                // If there was a placeholder, replace it with an img
+                const placeholder = card.querySelector('.image-placeholder');
+                if (placeholder) {
+                    placeholder.outerHTML = `<img src="/uploads/${data.image_path}?t=${Date.now()}" alt="">`;
+                }
+            }
+        } else {
+            alert(data.message || 'Fehler beim Hochladen');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Fehler beim Hochladen');
+    } finally {
+        categoryImageInput.value = '';
+        currentCategoryId = null;
+    }
+});
 
 async function deleteCategory(categoryId, categoryTitle) {
     if (!confirm(`Kategorie "${categoryTitle}" wirklich löschen? Alle Bilder in dieser Kategorie werden ebenfalls gelöscht.`)) {
@@ -119,6 +160,79 @@ async function deleteCategory(categoryId, categoryTitle) {
     } catch (err) {
         console.error(err);
         alert('Fehler beim Löschen');
+    }
+}
+
+// Drag and drop for reordering
+let draggedItem = null;
+
+document.querySelectorAll('.category-card[draggable="true"]').forEach(card => {
+    card.addEventListener('dragstart', function(e) {
+        draggedItem = this;
+        this.style.opacity = '0.5';
+    });
+    
+    card.addEventListener('dragend', function(e) {
+        this.style.opacity = '1';
+        document.querySelectorAll('.category-card').forEach(c => c.classList.remove('drag-over'));
+    });
+    
+    card.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+    
+    card.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+        if (this !== draggedItem) {
+            this.classList.add('drag-over');
+        }
+    });
+    
+    card.addEventListener('dragleave', function(e) {
+        this.classList.remove('drag-over');
+    });
+    
+    card.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        if (this !== draggedItem) {
+            const grid = document.getElementById('art-categories-grid');
+            const allCards = [...grid.querySelectorAll('.category-card')];
+            const draggedIndex = allCards.indexOf(draggedItem);
+            const dropIndex = allCards.indexOf(this);
+            
+            if (draggedIndex < dropIndex) {
+                this.parentNode.insertBefore(draggedItem, this.nextSibling);
+            } else {
+                this.parentNode.insertBefore(draggedItem, this);
+            }
+            
+            // Save new order
+            saveArtCategoryOrder();
+        }
+    });
+});
+
+async function saveArtCategoryOrder() {
+    const grid = document.getElementById('art-categories-grid');
+    const cards = grid.querySelectorAll('.category-card');
+    const order = [];
+    cards.forEach((card, index) => {
+        order.push({
+            id: parseInt(card.dataset.categoryId),
+            order: index
+        });
+    });
+    
+    try {
+        await fetch('/admin/api/art-categories/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: order })
+        });
+    } catch (err) {
+        console.error('Error saving order:', err);
     }
 }
 </script>

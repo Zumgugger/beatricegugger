@@ -6,7 +6,7 @@
 <div class="workshop-category-page">
     <div class="breadcrumb">
         <a href="{{ url_for('courses.index') }}" title="Zurück zu den Angeboten">
-            <img src="{{ url_for('static', filename='images/Pfeil links.png') }}" alt="Zurück" class="back-arrow">
+            <img src="{{ url_for('static', filename='images/Pfeil_links.png') }}" alt="Zurück" class="back-arrow">
         </a>
     </div>
     
@@ -222,7 +222,10 @@
             </div>
         </div>
         {% else %}
-        <p class="no-items">Neue Daten folgen.</p>
+        <p class="no-items {% if current_user.is_authenticated %}editable-text{% endif %}"
+           {% if current_user.is_authenticated %}data-entity="workshop-category" data-entity-id="{{ category.id }}" data-field="no_dates_text"{% endif %}>
+            {{ category.no_dates_text or 'Neue Daten folgen' }}
+        </p>
         {% endfor %}
     </div>
 </div>

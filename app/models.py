@@ -73,6 +73,7 @@ class WorkshopCategory(db.Model):
     image_path = db.Column(db.String(255))  # Header image on detail page
     card_image_path = db.Column(db.String(255))  # Card image on overview page
     description = db.Column(db.Text)
+    no_dates_text = db.Column(db.String(255), default='Neue Daten folgen')  # Text when no courses
     order = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -144,7 +145,7 @@ class ArtCategory(db.Model):
     __tablename__ = 'art_categories'
     
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
+    title = db.Column(db.String(200), nullable=True, default='')
     description = db.Column(db.Text)
     featured_image_path = db.Column(db.String(255))
     order = db.Column(db.Integer, default=0)

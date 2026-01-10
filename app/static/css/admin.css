@@ -111,6 +111,8 @@ body.admin-login {
     min-height: 100vh;
     background-image: url('../images/Hintergrund Seidenpapier.png');
     background-size: cover;
+    font-family: 'Courier Prime', monospace;
+    font-size: 1rem;
 }
 
 .login-container {
@@ -125,6 +127,41 @@ body.admin-login {
     border-radius: 8px;
 }
 
+.login-box input {
+    font-family: 'Courier Prime', monospace;
+    font-size: 1rem;
+    background: transparent;
+    border: 1px solid #333;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Override browser autofill yellow background */
+.login-box input:-webkit-autofill,
+.login-box input:-webkit-autofill:hover,
+.login-box input:-webkit-autofill:focus,
+.login-box input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+    -webkit-text-fill-color: #000 !important;
+    background-color: transparent !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.login-box .btn {
+    font-family: 'Courier Prime', monospace;
+    font-size: 1rem;
+    background: #6b6b6b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.login-box .btn:hover {
+    background: #555;
+}
+
 .login-logo {
     width: 100px;
     height: 100px;
@@ -135,6 +172,7 @@ body.admin-login {
 .login-box h1 {
     text-align: center;
     margin-bottom: 30px;
+    font-family: 'Courier Prime', monospace;
 }
 
 .btn-block {

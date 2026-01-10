@@ -266,10 +266,6 @@ def api_create_art_category():
     order = request.form.get('order', 0)
     is_active = bool(request.form.get('is_active'))
     
-    if not title:
-        flash('Titel ist erforderlich.', 'error')
-        return redirect(url_for('art.index'))
-    
     featured_image = request.files.get('featured_image')
     image_path = save_file(featured_image, 'art') if featured_image and featured_image.filename else None
     
@@ -294,6 +290,22 @@ def api_delete_art_category(category_id: int):
     db.session.delete(category)
     db.session.commit()
     return {"success": True}
+
+
+@bp.route('/api/art-categories/reorder', methods=['POST'])
+@login_required
+def api_reorder_art_categories():
+    """Reorder art categories via drag and drop."""
+    data = request.get_json()
+    order_data = data.get('order', [])
+    
+    for item in order_data:
+        category = ArtCategory.query.get(item['id'])
+        if category:
+            category.order = item['order']
+    
+    db.session.commit()
+    return jsonify({"success": True})
 
 
 @bp.route('/api/art-category/<int:category_id>/images', methods=['POST'])

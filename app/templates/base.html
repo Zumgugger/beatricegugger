@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
-<body data-is-admin="{% if current_user.is_authenticated %}1{% else %}0{% endif %}" class="{% block body_class %}{% endblock %}">
+<body data-is-admin="{% if current_user.is_authenticated %}1{% else %}0{% endif %}" class="{% if current_user.is_authenticated %}admin-logged-in {% endif %}{% block body_class %}{% endblock %}">
     {% if current_user.is_authenticated %}
     <div class="admin-status-bar">
         Eingeloggt als Administrator
