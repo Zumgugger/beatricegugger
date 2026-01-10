@@ -194,15 +194,19 @@
                 
                 {% if course.max_participants %}
                 <div class="course-spots">
-                    {{ course.registration_count }}/{{ course.max_participants }} Plätze belegt
-                    {% if course.is_full %}<span class="full-badge">Ausgebucht</span>{% endif %}
+                    {% set spots_free = course.max_participants - course.registration_count %}
+                    {% if course.is_full %}
+                    <span class="full-badge">Ausgebucht</span>
+                    {% else %}
+                    {{ spots_free }} Plätze frei
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
             
             <div class="course-actions">
                 {% if not course.is_full %}
-                <a href="{{ url_for('courses.register', course_id=course.id) }}" class="btn btn-register">Anmelden</a>
+                <a href="{{ url_for('courses.detail', course_id=course.id) }}" class="btn btn-register">Anmelden</a>
                 {% else %}
                 <span class="btn btn-disabled">Ausgebucht</span>
                 {% endif %}

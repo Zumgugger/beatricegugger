@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Anmeldungen - {{ course.title }} - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="registrations-page">
+    <div class="breadcrumb">
+        <a href="{{ url_for('courses.index') }}">Angebot</a> &gt;
+        <a href="{{ url_for('courses.workshop_category', category_id=course.workshop_category_id) }}">{{ course.workshop_category.title }}</a> &gt;
+        <span>Anmeldungen</span>
+    </div>
+    
+    <h1>Anmeldungen: {{ course.title }}</h1>
+    
+    {% if course.date %}
+    <p class="course-info">{{ course.date.strftime('%d.%m.%Y') }}{% if course.time_info %} | {{ course.time_info }}{% endif %}</p>
+    {% endif %}
+    
+    <div class="registrations-summary">
+        <span class="count">{{ registrations|length }} Anmeldung{% if registrations|length != 1 %}en{% endif %}</span>
+        {% if course.max_participants %}
+        <span class="capacity">von {{ course.max_participants }} Plätzen</span>
+        {% endif %}
+        <button class="btn-admin btn-admin-add" onclick="showAddRegistrationForm()" title="Anmeldung hinzufügen">+</button>
+    </div>
+    
+    <!-- Add Registration Form -->
+    <div id="add-registration-form" class="new-item-form" style="display: none;">
+        <h3>Neue Anmeldung</h3>
+        <form onsubmit="submitAddRegistration(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="add_vorname">Vorname *</label>
+                    <input type="text" name="vorname" id="add_vorname" required>
+                </div>
+                <div class="form-group">
+                    <label for="add_name">Name *</label>
+                    <input type="text" name="name" id="add_name" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="add_telefonnummer">Telefonnummer *</label>
+                    <input type="tel" name="telefonnummer" id="add_telefonnummer" required>
+                </div>
+                <div class="form-group">
+                    <label for="add_email">E-Mail (optional)</label>
+                    <input type="email" name="email" id="add_email">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                <button type="button" class="btn btn-secondary" onclick="hideAddRegistrationForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Edit Registration Form -->
+    <div id="edit-registration-form" class="new-item-form" style="display: none;">
+        <h3>Anmeldung bearbeiten</h3>
+        <form onsubmit="submitEditRegistration(event)">
+            <input type="hidden" name="registration_id" id="edit_registration_id">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_vorname">Vorname *</label>
+                    <input type="text" name="vorname" id="edit_vorname" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_name">Name *</label>
+                    <input type="text" name="name" id="edit_name" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_telefonnummer">Telefonnummer *</label>
+                    <input type="tel" name="telefonnummer" id="edit_telefonnummer" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_email">E-Mail (optional)</label>
+                    <input type="email" name="email" id="edit_email">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn btn-secondary" onclick="hideEditRegistrationForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="registrations-list">
+        {% for reg in registrations %}
+        <div class="registration-card" data-registration-id="{{ reg.id }}">
+            <div class="registration-info">
+                <div class="registration-name">{{ reg.vorname }} {{ reg.name }}</div>
+                <div class="registration-contact">
+                    <span class="phone">📞 {{ reg.telefonnummer }}</span>
+                    {% if reg.email %}
+                    <span class="email">✉️ {{ reg.email }}</span>
+                    {% endif %}
+                </div>
+                <div class="registration-date">Angemeldet: {{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }}</div>
+            </div>
+            <div class="registration-actions">
+                <button class="btn-icon btn-edit" onclick="editRegistration({{ reg.id }}, '{{ reg.vorname }}', '{{ reg.name }}', '{{ reg.telefonnummer }}', '{{ reg.email or '' }}')" title="Anmeldung bearbeiten">✏️</button>
+                <button class="btn-icon btn-delete" onclick="deleteRegistration({{ reg.id }}, '{{ reg.vorname }} {{ reg.name }}')" title="Anmeldung löschen">🗑️</button>
+            </div>
+        </div>
+        {% else %}
+        <p class="no-items">Keine Anmeldungen vorhanden.</p>
+        {% endfor %}
+    </div>
+    
+    <div class="page-actions">
+        <a href="{{ url_for('courses.workshop_category', category_id=course.workshop_category_id) }}" class="btn btn-secondary">← Zurück zum Workshop</a>
+    </div>
+</div>
+
+<style>
+.registrations-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.registrations-page h1 {
+    margin-bottom: 10px;
+}
+
+.course-info {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.registrations-summary {
+    margin-bottom: 30px;
+    padding: 15px;
+    background: rgba(139, 69, 19, 0.1);
+    border-radius: 8px;
+}
+
+.registrations-summary .count {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.registrations-summary .capacity {
+    color: #666;
+    margin-left: 10px;
+}
+
+.registrations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.registration-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.registration-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.registration-contact {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 5px;
+}
+
+.registration-contact .phone,
+.registration-contact .email {
+    color: #555;
+}
+
+.registration-date {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.registration-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.page-actions {
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    background: #6b6b6b;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background: #555;
+}
+
+@media (max-width: 768px) {
+    .registration-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .registration-contact {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .registration-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+</style>
+
+<script>
+function showAddRegistrationForm() {
+    document.getElementById('add-registration-form').style.display = 'block';
+    document.getElementById('edit-registration-form').style.display = 'none';
+}
+
+function hideAddRegistrationForm() {
+    document.getElementById('add-registration-form').style.display = 'none';
+}
+
+function hideEditRegistrationForm() {
+    document.getElementById('edit-registration-form').style.display = 'none';
+    // Show all registration cards again
+    document.querySelectorAll('.registration-card').forEach(card => {
+        card.style.display = 'flex';
+    });
+}
+
+function editRegistration(id, vorname, name, telefonnummer, email) {
+    // Hide all cards first, then show them except the one being edited
+    document.querySelectorAll('.registration-card').forEach(card => {
+        card.style.display = 'flex';
+    });
+    // Hide the card being edited
+    const cardToHide = document.querySelector(`[data-registration-id="${id}"]`);
+    if (cardToHide) {
+        cardToHide.style.display = 'none';
+    }
+    
+    document.getElementById('add-registration-form').style.display = 'none';
+    document.getElementById('edit-registration-form').style.display = 'block';
+    document.getElementById('edit_registration_id').value = id;
+    document.getElementById('edit_vorname').value = vorname;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_telefonnummer').value = telefonnummer;
+    document.getElementById('edit_email').value = email;
+}
+
+async function submitAddRegistration(event) {
+    event.preventDefault();
+    const form = event.target;
+    const data = {
+        vorname: form.vorname.value,
+        name: form.name.value,
+        telefonnummer: form.telefonnummer.value,
+        email: form.email.value || null
+    };
+    
+    try {
+        const resp = await fetch('/admin/api/course/{{ course.id }}/registration', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Fehler: ' + (result.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler: ' + e.message);
+    }
+}
+
+async function submitEditRegistration(event) {
+    event.preventDefault();
+    const form = event.target;
+    const registrationId = document.getElementById('edit_registration_id').value;
+    const data = {
+        vorname: form.vorname.value,
+        name: form.name.value,
+        telefonnummer: form.telefonnummer.value,
+        email: form.email.value || null
+    };
+    
+    try {
+        const resp = await fetch(`/admin/api/registration/${registrationId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Fehler: ' + (result.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler: ' + e.message);
+    }
+}
+
+async function deleteRegistration(registrationId, name) {
+    if (!confirm(`Anmeldung von "${name}" wirklich löschen?`)) {
+        return;
+    }
+    
+    try {
+        const resp = await fetch(`/admin/api/registration/${registrationId}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            document.querySelector(`[data-registration-id="${registrationId}"]`).remove();
+            // Update count
+            const countEl = document.querySelector('.registrations-summary .count');
+            const currentCount = document.querySelectorAll('.registration-card').length;
+            countEl.textContent = `${currentCount} Anmeldung${currentCount !== 1 ? 'en' : ''}`;
+        } else {
+            alert('Fehler beim Löschen: ' + (data.error || 'Unbekannter Fehler'));
+        }
+    } catch (e) {
+        alert('Fehler beim Löschen: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

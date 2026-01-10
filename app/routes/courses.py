@@ -88,8 +88,16 @@ def register(course_id):
     except Exception as e:
         print(f"Error notifying admin: {e}")
     
-    flash('Vielen Dank für Ihre Anmeldung!', 'success')
-    return redirect(url_for('courses.detail', course_id=course_id))
+    # Redirect to confirmation page
+    return redirect(url_for('courses.registration_success', course_id=course_id))
+
+
+@bp.route('/<int:course_id>/anmeldung-erfolgreich')
+def registration_success(course_id):
+    """Show registration success message."""
+    course = Course.query.get_or_404(course_id)
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
+    return render_template('courses/registration_success.html', course=course, nav_items=nav_items)
 
 
 def send_confirmation_email(registration, course):

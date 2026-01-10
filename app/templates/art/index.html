@@ -53,8 +53,8 @@
             </div>
             {% endif %}
             
-            <div class="category-image {% if current_user.is_authenticated %}editable-image{% endif %}"
-                 {% if current_user.is_authenticated %}data-entity="art-category" data-entity-id="{{ category.id }}"{% endif %}>
+            {% if current_user.is_authenticated %}
+            <div class="category-image editable-image" data-entity="art-category" data-entity-id="{{ category.id }}">
                 {% if category.featured_image_path %}
                 <img src="{{ url_for('uploaded_file', filename=category.featured_image_path) }}" alt="{{ category.title }}">
                 {% else %}
@@ -63,16 +63,30 @@
             </div>
             
             <div class="category-info">
-                <h2 class="{% if current_user.is_authenticated %}editable-text{% endif %}"
-                    {% if current_user.is_authenticated %}data-entity="art-category" data-entity-id="{{ category.id }}" data-field="title"{% endif %}>
+                <h2 class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="title">
                     {{ category.title }}
                 </h2>
-                <p class="{% if current_user.is_authenticated %}editable-text{% endif %}"
-                   {% if current_user.is_authenticated %}data-entity="art-category" data-entity-id="{{ category.id }}" data-field="description"{% endif %}>
+                <p class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="description">
                     {{ category.description }}
                 </p>
                 <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="btn btn-primary">Galerie ansehen</a>
             </div>
+            {% else %}
+            <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="category-link">
+                <div class="category-image">
+                    {% if category.featured_image_path %}
+                    <img src="{{ url_for('uploaded_file', filename=category.featured_image_path) }}" alt="{{ category.title }}">
+                    {% else %}
+                    <div class="image-placeholder">Kein Bild</div>
+                    {% endif %}
+                </div>
+            </a>
+            
+            <div class="category-info">
+                <h2>{{ category.title }}</h2>
+                <p>{{ category.description }}</p>
+            </div>
+            {% endif %}
         </div>
         {% else %}
         <p>Derzeit keine Kategorien verfügbar.</p>

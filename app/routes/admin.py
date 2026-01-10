@@ -7,6 +7,7 @@ from flask import (
     url_for,
     flash,
     current_app,
+    jsonify,
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
@@ -509,7 +510,54 @@ def course_registrations(course_id):
     """View registrations for a specific course."""
     course = Course.query.get_or_404(course_id)
     registrations = course.registrations.order_by(CourseRegistration.registered_at.desc()).all()
-    return render_template('admin/course_registrations.html', course=course, registrations=registrations)
+    nav_items = NavigationItem.query.filter_by(is_active=True).order_by(NavigationItem.order).all()
+    return render_template('courses/registrations.html', course=course, registrations=registrations, nav_items=nav_items)
+
+
+@bp.route('/api/registration/<int:registration_id>', methods=['DELETE'])
+@login_required
+def api_delete_registration(registration_id):
+    """Delete a registration."""
+    registration = CourseRegistration.query.get_or_404(registration_id)
+    db.session.delete(registration)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@bp.route('/api/registration/<int:registration_id>', methods=['PUT'])
+@login_required
+def api_update_registration(registration_id):
+    """Update a registration."""
+    registration = CourseRegistration.query.get_or_404(registration_id)
+    data = request.get_json()
+    
+    registration.vorname = data.get('vorname', registration.vorname)
+    registration.name = data.get('name', registration.name)
+    registration.telefonnummer = data.get('telefonnummer', registration.telefonnummer)
+    registration.email = data.get('email') or None
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@bp.route('/api/course/<int:course_id>/registration', methods=['POST'])
+@login_required
+def api_create_registration(course_id):
+    """Create a new registration for a course."""
+    course = Course.query.get_or_404(course_id)
+    data = request.get_json()
+    
+    registration = CourseRegistration(
+        course_id=course_id,
+        vorname=data.get('vorname', '').strip(),
+        name=data.get('name', '').strip(),
+        telefonnummer=data.get('telefonnummer', '').strip(),
+        email=data.get('email') or None
+    )
+    
+    db.session.add(registration)
+    db.session.commit()
+    return jsonify({'success': True, 'id': registration.id})
 
 
 @bp.route('/art')
