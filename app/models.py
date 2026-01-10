@@ -172,6 +172,20 @@ class ArtImage(db.Model):
         return f'<ArtImage {self.id} in Category {self.category_id}>'
 
 
+class LocationMapping(db.Model):
+    """Mapping of location addresses to Google Maps URLs."""
+    __tablename__ = 'location_mappings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    address = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    google_maps_url = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<LocationMapping {self.address}>'
+
+
 class SiteSettings(db.Model):
     """Site-wide settings."""
     __tablename__ = 'site_settings'

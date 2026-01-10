@@ -10,7 +10,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
-from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory
+from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory, LocationMapping
 from werkzeug.utils import secure_filename
 import os
 from pathlib import Path
@@ -135,6 +135,70 @@ def api_create_course():
     db.session.commit()
     flash('Kurs wurde erstellt.', 'success')
     return redirect(url_for('courses.index'))
+
+
+@bp.route('/api/course/<int:course_id>', methods=['GET'])
+@login_required
+def api_get_course(course_id: int):
+    """Get course data for editing."""
+    course = Course.query.get_or_404(course_id)
+    return {
+        "success": True,
+        "course": {
+            "id": course.id,
+            "title": course.title,
+            "description": course.description or "",
+            "date": course.date.strftime('%Y-%m-%d') if course.date else "",
+            "time_info": course.time_info or "",
+            "cost": course.cost or "",
+            "location": course.location or "",
+            "location_url": course.location_url or "",
+            "max_participants": course.max_participants or ""
+        }
+    }
+
+
+@bp.route('/api/course/<int:course_id>', methods=['PUT'])
+@login_required
+def api_update_course(course_id: int):
+    """Update a course via AJAX."""
+    from flask import jsonify
+    course = Course.query.get_or_404(course_id)
+    data = request.get_json(silent=True) or {}
+    
+    if 'title' in data:
+        course.title = data['title'].strip()
+    if 'description' in data:
+        course.description = data['description'].strip() if data['description'] else None
+    if 'date' in data and data['date']:
+        try:
+            course.date = datetime.strptime(data['date'], '%Y-%m-%d')
+        except ValueError:
+            pass
+    if 'time_info' in data:
+        course.time_info = data['time_info'].strip() if data['time_info'] else None
+    if 'cost' in data:
+        course.cost = data['cost'].strip() if data['cost'] else None
+    if 'location' in data:
+        course.location = data['location'].strip() if data['location'] else None
+    if 'location_url' in data:
+        course.location_url = data['location_url'].strip() if data['location_url'] else None
+    if 'max_participants' in data:
+        course.max_participants = int(data['max_participants']) if data['max_participants'] else None
+    
+    # Save location mapping if both provided
+    location = course.location
+    location_url = course.location_url
+    if location and location_url:
+        existing_mapping = LocationMapping.query.filter_by(address=location).first()
+        if existing_mapping:
+            existing_mapping.google_maps_url = location_url
+        else:
+            new_mapping = LocationMapping(address=location, google_maps_url=location_url)
+            db.session.add(new_mapping)
+    
+    db.session.commit()
+    return jsonify({"success": True, "message": "Kurs aktualisiert"})
 
 
 @bp.route('/api/course/<int:course_id>', methods=['DELETE'])
@@ -878,6 +942,70 @@ def api_create_course_in_category(category_id):
         image_path=image_path,
     )
     db.session.add(course)
+    
+    # Save location mapping if both location and location_url are provided
+    if location and location_url:
+        existing_mapping = LocationMapping.query.filter_by(address=location).first()
+        if existing_mapping:
+            existing_mapping.google_maps_url = location_url
+        else:
+            new_mapping = LocationMapping(address=location, google_maps_url=location_url)
+            db.session.add(new_mapping)
+    
     db.session.commit()
     flash('Kurs wurde erstellt.', 'success')
     return redirect(url_for('courses.workshop_category', category_id=category_id))
+
+
+# Location Mapping API
+@bp.route('/api/location-mapping', methods=['GET'])
+@login_required
+def api_get_location_mapping():
+    """Get Google Maps URL for a given address."""
+    from flask import jsonify
+    address = request.args.get('address', '').strip()
+    if not address:
+        return jsonify({'success': False, 'message': 'No address provided'})
+    
+    mapping = LocationMapping.query.filter_by(address=address).first()
+    if mapping:
+        return jsonify({'success': True, 'url': mapping.google_maps_url})
+    return jsonify({'success': False, 'url': None})
+
+
+@bp.route('/api/location-mappings', methods=['GET'])
+@login_required
+def api_get_all_location_mappings():
+    """Get all location mappings for autocomplete."""
+    from flask import jsonify
+    mappings = LocationMapping.query.all()
+    result = {m.address: m.google_maps_url for m in mappings}
+    return jsonify({'success': True, 'mappings': result})
+
+
+@bp.route('/api/location-mapping', methods=['POST'])
+@login_required
+def api_save_location_mapping():
+    """Save or update a location mapping."""
+    from flask import jsonify
+    data = request.get_json()
+    address = data.get('address', '').strip()
+    url = data.get('url', '').strip()
+    
+    if not address:
+        return jsonify({'success': False, 'message': 'Address required'})
+    
+    existing = LocationMapping.query.filter_by(address=address).first()
+    if existing:
+        existing.google_maps_url = url
+    else:
+        new_mapping = LocationMapping(address=address, google_maps_url=url)
+        db.session.add(new_mapping)
+    
+    # Update all courses with this location to use the new URL
+    courses_to_update = Course.query.filter_by(location=address).all()
+    for course in courses_to_update:
+        course.location_url = url
+    
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Location mapping saved'})

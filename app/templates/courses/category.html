@@ -66,7 +66,7 @@
         <form action="{{ url_for('admin.api_create_course_in_category', category_id=category.id) }}" method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="title">Titel *</label>
-                <input type="text" name="title" id="title" required>
+                <input type="text" name="title" id="title" value="{{ category.title }}" required>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -90,11 +90,13 @@
             </div>
             <div class="form-group">
                 <label for="location">Ort</label>
-                <input type="text" name="location" id="location">
+                <input type="text" name="location" id="location" list="location-suggestions" autocomplete="off">
+                <datalist id="location-suggestions"></datalist>
             </div>
             <div class="form-group">
-                <label for="location_url">Google Maps Link (optional)</label>
+                <label for="location_url">Google Maps Link</label>
                 <input type="url" name="location_url" id="location_url" placeholder="https://maps.google.com/...">
+                <small id="location-url-hint" style="color: #666; display: none;">Wird automatisch vorgeschlagen basierend auf früherem Ort</small>
             </div>
             <div class="form-group">
                 <label for="description">Beschreibung (optional)</label>
@@ -103,6 +105,55 @@
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Erstellen</button>
                 <button type="button" class="btn btn-secondary" onclick="hideNewCourseForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Edit Course Form -->
+    <div id="edit-course-form" class="new-item-form" style="display: none;">
+        <h3>Kurs bearbeiten</h3>
+        <form id="edit-course-form-element" onsubmit="submitEditCourse(event)">
+            <input type="hidden" name="course_id" id="edit_course_id">
+            <div class="form-group">
+                <label for="edit_title">Titel *</label>
+                <input type="text" name="title" id="edit_title" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_date">Datum *</label>
+                    <input type="date" name="date" id="edit_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_time_info">Zeit (z.B. 14:00 - 17:00)</label>
+                    <input type="text" name="time_info" id="edit_time_info" placeholder="14:00 - 17:00">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_cost">Kosten</label>
+                    <input type="text" name="cost" id="edit_cost" placeholder="CHF 120.-">
+                </div>
+                <div class="form-group">
+                    <label for="edit_max_participants">Max. Teilnehmer</label>
+                    <input type="number" name="max_participants" id="edit_max_participants" min="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="edit_location">Ort</label>
+                <input type="text" name="location" id="edit_location" list="location-suggestions" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="edit_location_url">Google Maps Link</label>
+                <input type="url" name="location_url" id="edit_location_url" placeholder="https://maps.google.com/...">
+                <small id="edit-location-url-hint" style="color: #666; display: none;">Wird automatisch vorgeschlagen basierend auf früherem Ort</small>
+            </div>
+            <div class="form-group">
+                <label for="edit_description">Beschreibung (optional)</label>
+                <textarea name="description" id="edit_description" rows="2"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn btn-secondary" onclick="hideEditCourseForm()">Abbrechen</button>
             </div>
         </form>
     </div>
@@ -157,6 +208,7 @@
                 {% endif %}
                 
                 {% if current_user.is_authenticated %}
+                <button class="btn-icon btn-edit" onclick="editCourse({{ course.id }})" title="Kurs bearbeiten">✏️</button>
                 <a href="{{ url_for('admin.course_registrations', course_id=course.id) }}" class="btn-admin btn-registrations" title="Anmeldungen verwalten">
                     👥 {{ course.registration_count }}
                 </a>
@@ -165,7 +217,7 @@
             </div>
         </div>
         {% else %}
-        <p class="no-items">Zurzeit keine Kursdaten verfügbar.</p>
+        <p class="no-items">Neue Daten folgen.</p>
         {% endfor %}
     </div>
 </div>
@@ -177,10 +229,79 @@
 <script>
 function showNewCourseForm() {
     document.getElementById('new-course-form').style.display = 'block';
+    document.getElementById('edit-course-form').style.display = 'none';
 }
 
 function hideNewCourseForm() {
     document.getElementById('new-course-form').style.display = 'none';
+}
+
+function hideEditCourseForm() {
+    document.getElementById('edit-course-form').style.display = 'none';
+}
+
+async function editCourse(courseId) {
+    // Hide new form if open
+    document.getElementById('new-course-form').style.display = 'none';
+    
+    try {
+        const resp = await fetch(`/admin/api/course/${courseId}`);
+        const data = await resp.json();
+        if (data.success) {
+            const course = data.course;
+            document.getElementById('edit_course_id').value = course.id;
+            document.getElementById('edit_title').value = course.title;
+            document.getElementById('edit_date').value = course.date;
+            document.getElementById('edit_time_info').value = course.time_info;
+            document.getElementById('edit_cost').value = course.cost;
+            document.getElementById('edit_location').value = course.location;
+            document.getElementById('edit_location_url').value = course.location_url;
+            document.getElementById('edit_max_participants').value = course.max_participants;
+            document.getElementById('edit_description').value = course.description;
+            
+            document.getElementById('edit-course-form').style.display = 'block';
+            document.getElementById('edit_title').focus();
+        } else {
+            alert('Fehler beim Laden des Kurses');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Fehler beim Laden des Kurses');
+    }
+}
+
+async function submitEditCourse(event) {
+    event.preventDefault();
+    const courseId = document.getElementById('edit_course_id').value;
+    
+    const data = {
+        title: document.getElementById('edit_title').value,
+        date: document.getElementById('edit_date').value,
+        time_info: document.getElementById('edit_time_info').value,
+        cost: document.getElementById('edit_cost').value,
+        location: document.getElementById('edit_location').value,
+        location_url: document.getElementById('edit_location_url').value,
+        max_participants: document.getElementById('edit_max_participants').value,
+        description: document.getElementById('edit_description').value
+    };
+    
+    try {
+        const resp = await fetch(`/admin/api/course/${courseId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showFlashMessage('Kurs aktualisiert', 'success');
+            location.reload();
+        } else {
+            alert(result.message || 'Fehler beim Speichern');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Fehler beim Speichern');
+    }
 }
 
 async function deleteCourse(courseId, courseTitle) {
@@ -242,6 +363,124 @@ function showFlashMessage(message, type) {
     flash.textContent = message;
     document.body.appendChild(flash);
     setTimeout(() => flash.remove(), 3000);
+}
+
+// Location mapping functionality
+let locationMappings = {};
+
+async function loadLocationMappings() {
+    try {
+        const resp = await fetch('/admin/api/location-mappings');
+        const data = await resp.json();
+        if (data.success) {
+            locationMappings = data.mappings;
+            // Populate datalist with known locations
+            const datalist = document.getElementById('location-suggestions');
+            datalist.innerHTML = '';
+            for (const address of Object.keys(locationMappings)) {
+                const option = document.createElement('option');
+                option.value = address;
+                datalist.appendChild(option);
+            }
+        }
+    } catch (err) {
+        console.error('Error loading location mappings:', err);
+    }
+}
+
+// Load mappings on page load
+loadLocationMappings();
+
+// When location field changes, suggest Google Maps URL
+const locationInput = document.getElementById('location');
+const locationUrlInput = document.getElementById('location_url');
+const locationUrlHint = document.getElementById('location-url-hint');
+
+if (locationInput && locationUrlInput) {
+    locationInput.addEventListener('input', function() {
+        const address = this.value.trim();
+        if (locationMappings[address]) {
+            locationUrlInput.value = locationMappings[address];
+            locationUrlHint.style.display = 'block';
+        } else {
+            locationUrlHint.style.display = 'none';
+        }
+    });
+    
+    locationInput.addEventListener('change', function() {
+        const address = this.value.trim();
+        if (locationMappings[address]) {
+            locationUrlInput.value = locationMappings[address];
+            locationUrlHint.style.display = 'block';
+        } else {
+            locationUrlHint.style.display = 'none';
+        }
+    });
+    
+    // When URL changes, save the mapping
+    locationUrlInput.addEventListener('change', async function() {
+        const address = locationInput.value.trim();
+        const url = this.value.trim();
+        if (address && url) {
+            try {
+                await fetch('/admin/api/location-mapping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address, url })
+                });
+                locationMappings[address] = url;
+                // Update datalist
+                loadLocationMappings();
+            } catch (err) {
+                console.error('Error saving location mapping:', err);
+            }
+        }
+    });
+}
+
+// Edit form location handling
+const editLocationInput = document.getElementById('edit_location');
+const editLocationUrlInput = document.getElementById('edit_location_url');
+const editLocationUrlHint = document.getElementById('edit-location-url-hint');
+
+if (editLocationInput && editLocationUrlInput) {
+    editLocationInput.addEventListener('input', function() {
+        const address = this.value.trim();
+        if (locationMappings[address]) {
+            editLocationUrlInput.value = locationMappings[address];
+            editLocationUrlHint.style.display = 'block';
+        } else {
+            editLocationUrlHint.style.display = 'none';
+        }
+    });
+    
+    editLocationInput.addEventListener('change', function() {
+        const address = this.value.trim();
+        if (locationMappings[address]) {
+            editLocationUrlInput.value = locationMappings[address];
+            editLocationUrlHint.style.display = 'block';
+        } else {
+            editLocationUrlHint.style.display = 'none';
+        }
+    });
+    
+    editLocationUrlInput.addEventListener('change', async function() {
+        const address = editLocationInput.value.trim();
+        const url = this.value.trim();
+        if (address && url) {
+            try {
+                await fetch('/admin/api/location-mapping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address, url })
+                });
+                locationMappings[address] = url;
+                loadLocationMappings();
+            } catch (err) {
+                console.error('Error saving location mapping:', err);
+            }
+        }
+    });
 }
 </script>
 {% endif %}

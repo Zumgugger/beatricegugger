@@ -319,7 +319,7 @@ body.homepage .footer {
 
 /* Landing page */
 .landing-page {
-    text-align: center;
+    text-align: left;
     padding: 60px 20px;
 }
 
@@ -389,7 +389,7 @@ body.homepage .footer {
 
 .category-title {
     padding: 15px;
-    text-align: center;
+    text-align: left;
     margin: 0;
     font-size: 1.3rem;
 }
@@ -497,7 +497,7 @@ body.homepage .footer {
 }
 
 .category-header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 30px;
 }
 
@@ -534,7 +534,7 @@ body.homepage .footer {
 
 .category-description-section {
     margin-bottom: 30px;
-    text-align: center;
+    text-align: left;
 }
 
 .category-description {
@@ -626,6 +626,7 @@ body.homepage .footer {
     display: flex;
     gap: 10px;
     align-items: center;
+    justify-content: flex-end;
 }
 
 .btn-register {
