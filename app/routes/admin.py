@@ -855,9 +855,14 @@ def api_create_course_in_category(category_id):
     parsed_date = None
     if date_str:
         try:
-            parsed_date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+            # Try date-only format first (from date input)
+            parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
         except ValueError:
-            pass
+            try:
+                # Try datetime-local format as fallback
+                parsed_date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                pass
     
     course = Course(
         workshop_category_id=category_id,

@@ -5,25 +5,59 @@
 {% block content %}
 <div class="workshop-category-page">
     <div class="breadcrumb">
-        <a href="{{ url_for('courses.index') }}">Workshops</a> &gt;
+        <a href="{{ url_for('courses.index') }}">Angebot</a> &gt;
         <span>{{ category.title }}</span>
     </div>
     
-    <h1 class="{% if current_user.is_authenticated %}editable-text{% endif %}"
-        {% if current_user.is_authenticated %}data-entity="workshop-category" data-entity-id="{{ category.id }}" data-field="title"{% endif %}>
-        {{ category.title }}
-    </h1>
+    <!-- Category Header with Image -->
+    <div class="category-header">
+        {% if current_user.is_authenticated %}
+        <div class="category-header-image">
+            {% if category.image_path %}
+                {% if category.image_path.startswith('static/images/') %}
+                <img src="{{ url_for('static', filename=category.image_path.replace('static/', '')) }}" alt="{{ category.title }}">
+                {% else %}
+                <img src="{{ url_for('uploaded_file', filename=category.image_path) }}" alt="{{ category.title }}">
+                {% endif %}
+            {% else %}
+            <div class="image-placeholder">Kein Bild</div>
+            {% endif %}
+            <button class="btn-icon btn-change-header-image" onclick="changeCategoryImage()" title="Bild wechseln">📷</button>
+        </div>
+        {% else %}
+        <div class="category-header-image">
+            {% if category.image_path %}
+                {% if category.image_path.startswith('static/images/') %}
+                <img src="{{ url_for('static', filename=category.image_path.replace('static/', '')) }}" alt="{{ category.title }}">
+                {% else %}
+                <img src="{{ url_for('uploaded_file', filename=category.image_path) }}" alt="{{ category.title }}">
+                {% endif %}
+            {% else %}
+            <div class="image-placeholder">Kein Bild</div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <h1 class="{% if current_user.is_authenticated %}editable-text{% endif %}"
+            {% if current_user.is_authenticated %}data-entity="workshop-category" data-entity-id="{{ category.id }}" data-field="title"{% endif %}>
+            {{ category.title }}
+        </h1>
+    </div>
     
-    {% if category.description %}
-    <p class="category-description {% if current_user.is_authenticated %}editable-text{% endif %}"
-       {% if current_user.is_authenticated %}data-entity="workshop-category" data-entity-id="{{ category.id }}" data-field="description"{% endif %}>
-        {{ category.description }}
-    </p>
-    {% endif %}
+    <!-- Category Description -->
+    <div class="category-description-section">
+        {% if category.description or current_user.is_authenticated %}
+        <div class="category-description {% if current_user.is_authenticated %}editable-text{% endif %}"
+           {% if current_user.is_authenticated %}data-entity="workshop-category" data-entity-id="{{ category.id }}" data-field="description"{% endif %}>
+            {{ (category.description|safe) if category.description else 'Beschreibung hinzufügen...' }}
+        </div>
+        {% endif %}
+    </div>
     
+    <!-- Admin: Add Course Button -->
     {% if current_user.is_authenticated %}
     <div class="admin-controls">
-        <button class="btn btn-add" onclick="showNewCourseForm()">+ Neuer Kurs</button>
+        <button class="btn-admin btn-admin-add" onclick="showNewCourseForm()" title="Neuer Kurs">+</button>
     </div>
     
     <!-- New Course Form -->
@@ -34,28 +68,20 @@
                 <label for="title">Titel *</label>
                 <input type="text" name="title" id="title" required>
             </div>
-            <div class="form-group">
-                <label for="image">Bild</label>
-                <input type="file" name="image" id="image" accept="image/*">
-            </div>
-            <div class="form-group">
-                <label for="description">Beschreibung</label>
-                <textarea name="description" id="description" rows="3"></textarea>
-            </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="date">Datum</label>
-                    <input type="datetime-local" name="date" id="date">
+                    <label for="date">Datum *</label>
+                    <input type="date" name="date" id="date" required>
                 </div>
                 <div class="form-group">
                     <label for="time_info">Zeit (z.B. 14:00 - 17:00)</label>
-                    <input type="text" name="time_info" id="time_info">
+                    <input type="text" name="time_info" id="time_info" placeholder="14:00 - 17:00">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="cost">Kosten (z.B. CHF 120.-)</label>
-                    <input type="text" name="cost" id="cost">
+                    <label for="cost">Kosten</label>
+                    <input type="text" name="cost" id="cost" placeholder="CHF 120.-">
                 </div>
                 <div class="form-group">
                     <label for="max_participants">Max. Teilnehmer</label>
@@ -67,8 +93,12 @@
                 <input type="text" name="location" id="location">
             </div>
             <div class="form-group">
-                <label for="location_url">Google Maps Link</label>
+                <label for="location_url">Google Maps Link (optional)</label>
                 <input type="url" name="location_url" id="location_url" placeholder="https://maps.google.com/...">
+            </div>
+            <div class="form-group">
+                <label for="description">Beschreibung (optional)</label>
+                <textarea name="description" id="description" rows="2"></textarea>
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Erstellen</button>
@@ -78,46 +108,72 @@
     </div>
     {% endif %}
     
-    <div class="courses-grid">
+    <!-- Courses List -->
+    <div class="courses-list">
+        <h2>Kursdaten</h2>
         {% for course in courses %}
-        <div class="course-card" data-course-id="{{ course.id }}">
-            {% if current_user.is_authenticated %}
-            <div class="card-admin-controls">
-                <button class="btn-icon btn-delete" onclick="deleteCourse({{ course.id }}, '{{ course.title }}')" title="Kurs löschen">🗑️</button>
-            </div>
-            {% endif %}
-            
-            <a href="{{ url_for('courses.detail', course_id=course.id) }}" class="course-link">
-                <div class="course-image {% if current_user.is_authenticated %}editable-image{% endif %}"
-                     {% if current_user.is_authenticated %}data-entity="course" data-entity-id="{{ course.id }}"{% endif %}>
-                    {% if course.image_path %}
-                    <img src="{{ url_for('uploaded_file', filename=course.image_path) }}" alt="{{ course.title }}">
-                    {% else %}
-                    <div class="image-placeholder">Bild hinzufügen</div>
+        <div class="course-item{% if course.is_full %} course-full{% endif %}" data-course-id="{{ course.id }}">
+            <div class="course-info">
+                <div class="course-date-time">
+                    {% if course.date %}
+                    <span class="course-date">{{ course.date.strftime('%d.%m.%Y') }}</span>
+                    {% endif %}
+                    {% if course.time_info %}
+                    <span class="course-time">{{ course.time_info }}</span>
                     {% endif %}
                 </div>
-            </a>
+                
+                {% if course.title and course.title != category.title %}
+                <div class="course-title">{{ course.title }}</div>
+                {% endif %}
+                
+                {% if course.cost %}
+                <div class="course-cost">{{ course.cost }}</div>
+                {% endif %}
+                
+                {% if course.location %}
+                <div class="course-location">
+                    {% if course.location_url %}
+                    <a href="{{ course.location_url }}" target="_blank">{{ course.location }}</a>
+                    {% else %}
+                    {{ course.location }}
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if course.max_participants %}
+                <div class="course-spots">
+                    {{ course.registration_count }}/{{ course.max_participants }} Plätze belegt
+                    {% if course.is_full %}<span class="full-badge">Ausgebucht</span>{% endif %}
+                </div>
+                {% endif %}
+            </div>
             
-            <h2 class="course-title {% if current_user.is_authenticated %}editable-text{% endif %}"
-                {% if current_user.is_authenticated %}data-entity="course" data-entity-id="{{ course.id }}" data-field="title"{% endif %}>
-                {{ course.title }}
-            </h2>
-            
-            {% if course.date %}
-            <p class="course-date">📅 {{ course.date.strftime('%d.%m.%Y') }}</p>
-            {% endif %}
-            
-            {% if course.cost %}
-            <p class="course-cost">💰 {{ course.cost }}</p>
-            {% endif %}
+            <div class="course-actions">
+                {% if not course.is_full %}
+                <a href="{{ url_for('courses.register', course_id=course.id) }}" class="btn btn-register">Anmelden</a>
+                {% else %}
+                <span class="btn btn-disabled">Ausgebucht</span>
+                {% endif %}
+                
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('admin.course_registrations', course_id=course.id) }}" class="btn-admin btn-registrations" title="Anmeldungen verwalten">
+                    👥 {{ course.registration_count }}
+                </a>
+                <button class="btn-icon btn-delete" onclick="deleteCourse({{ course.id }}, '{{ course.title }}')" title="Kurs löschen">🗑️</button>
+                {% endif %}
+            </div>
         </div>
         {% else %}
-        <p class="no-items">Zurzeit keine solchen Kurse im Angebot.</p>
+        <p class="no-items">Zurzeit keine Kursdaten verfügbar.</p>
         {% endfor %}
     </div>
 </div>
 
 {% if current_user.is_authenticated %}
+<!-- Hidden file input for category image -->
+<input type="file" id="categoryImageInput" accept="image/*" style="display: none;">
+
 <script>
 function showNewCourseForm() {
     document.getElementById('new-course-form').style.display = 'block';
@@ -128,7 +184,7 @@ function hideNewCourseForm() {
 }
 
 async function deleteCourse(courseId, courseTitle) {
-    if (!confirm(`Kurs "${courseTitle}" wirklich löschen?`)) {
+    if (!confirm(`⚠️ Kurs "${courseTitle}" wirklich löschen?\n\nAlle Anmeldungen werden ebenfalls gelöscht!`)) {
         return;
     }
     try {
@@ -136,6 +192,7 @@ async function deleteCourse(courseId, courseTitle) {
         const data = await resp.json();
         if (data.success) {
             document.querySelector(`[data-course-id="${courseId}"]`).remove();
+            showFlashMessage('Kurs wurde gelöscht.', 'info');
         } else {
             alert(data.message || 'Fehler beim Löschen');
         }
@@ -143,6 +200,48 @@ async function deleteCourse(courseId, courseTitle) {
         console.error(err);
         alert('Fehler beim Löschen');
     }
+}
+
+// Category image change
+const categoryImageInput = document.getElementById('categoryImageInput');
+
+function changeCategoryImage() {
+    categoryImageInput.click();
+}
+
+categoryImageInput.addEventListener('change', async () => {
+    if (!categoryImageInput.files.length) return;
+    const file = categoryImageInput.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+        const resp = await fetch('/admin/api/workshop-category/{{ category.id }}/image', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.success && data.image_path) {
+            const img = document.querySelector('.category-header-image img');
+            if (img) {
+                img.src = `/uploads/${data.image_path}?t=${Date.now()}`;
+            } else {
+                location.reload();
+            }
+            showFlashMessage('Bild aktualisiert', 'info');
+        } else {
+            alert(data.message || 'Fehler beim Hochladen');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Fehler beim Hochladen');
+    } finally {
+        categoryImageInput.value = '';
+    }
+});
+
+function showFlashMessage(message, type) {
+    const flash = document.createElement('div');
+    flash.className = `flash-message flash-${type}`;
+    flash.textContent = message;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 3000);
 }
 </script>
 {% endif %}
