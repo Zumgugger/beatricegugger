@@ -1,10 +1,13 @@
 """Course routes (listing, detail, registration)."""
+import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import current_user
-from app import db, mail
+from app import db, mail, limiter
 from app.models import Course, CourseRegistration, NavigationItem, WorkshopCategory, Page
 from flask_mail import Message
 import os
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('courses', __name__, url_prefix='/angebot')
 
@@ -41,6 +44,7 @@ def detail(course_id):
 
 
 @bp.route('/<int:course_id>/register', methods=['POST'])
+@limiter.limit("10 per hour")
 def register(course_id):
     """Handle course registration."""
     course = Course.query.get_or_404(course_id)
@@ -80,13 +84,13 @@ def register(course_id):
             registration.confirmation_sent = True
             db.session.commit()
         except Exception as e:
-            print(f"Error sending email: {e}")
+            logger.error(f"Error sending confirmation email: {e}")
 
     # Notify admin
     try:
         notify_admin_registration(registration, course)
     except Exception as e:
-        print(f"Error notifying admin: {e}")
+        logger.error(f"Error notifying admin: {e}")
     
     # Redirect to confirmation page
     return redirect(url_for('courses.registration_success', course_id=course_id))

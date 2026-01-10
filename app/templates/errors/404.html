@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Seite nicht gefunden - Beatrice Gugger{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>404</h1>
+    <h2>Seite nicht gefunden</h2>
+    <p>Die angeforderte Seite existiert nicht.</p>
+    <a href="{{ url_for('public.index') }}" class="btn btn-primary">Zur Startseite</a>
+</div>
+{% endblock %}

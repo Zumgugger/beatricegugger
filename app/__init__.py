@@ -1,16 +1,27 @@
 """Flask application factory."""
-from flask import Flask, send_from_directory
+import logging
+from flask import Flask, send_from_directory, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from config import config
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 mail = Mail()
+limiter = Limiter(key_func=get_remote_address, default_limits=["200 per day", "50 per hour"])
 
 
 def create_app(config_name='development'):
@@ -23,6 +34,7 @@ def create_app(config_name='development'):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     mail.init_app(app)
+    limiter.init_app(app)
     
     # Configure login manager
     login_manager.login_view = 'admin.login'
@@ -54,6 +66,28 @@ def create_app(config_name='development'):
         if not Path(upload_folder).is_absolute():
             upload_folder = Path(app.root_path).parent / upload_folder
         return send_from_directory(str(upload_folder), filename)
+    
+    # Health check endpoint for production monitoring
+    @app.route('/health')
+    def health_check():
+        try:
+            # Test database connection
+            db.session.execute(db.text('SELECT 1'))
+            return jsonify({'status': 'healthy', 'database': 'connected'}), 200
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
+    
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return render_template('errors/404.html'), 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        logger.error(f"Internal server error: {error}")
+        return render_template('errors/500.html'), 500
     
     return app
 

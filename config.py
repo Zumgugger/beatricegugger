@@ -53,12 +53,27 @@ class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
     MAIL_DEBUG = True
+    # Dev-friendly defaults - OK to have hardcoded fallbacks
 
 
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
     TESTING = False
+    
+    # Security settings for production
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PREFERRED_URL_SCHEME = 'https'
+    
+    # In production, SECRET_KEY must be set via environment
+    @property
+    def SECRET_KEY(self):
+        key = os.environ.get('SECRET_KEY')
+        if not key or key == 'dev-secret-key-change-in-production':
+            raise ValueError("Production SECRET_KEY must be set via environment variable!")
+        return key
 
 
 class TestingConfig(Config):

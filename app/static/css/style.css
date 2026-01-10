@@ -1454,3 +1454,26 @@ body.homepage .footer {
         width: 100%;
     }
 }
+
+/* Error pages */
+.error-page {
+    text-align: center;
+    padding: 60px 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.error-page h1 {
+    font-size: 6rem;
+    margin: 0;
+    color: #6b6b6b;
+}
+
+.error-page h2 {
+    margin: 10px 0 20px;
+}
+
+.error-page p {
+    margin-bottom: 30px;
+    color: #666;
+}

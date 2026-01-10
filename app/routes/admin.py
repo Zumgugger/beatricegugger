@@ -1,4 +1,5 @@
 """Admin routes and authentication."""
+import logging
 from flask import (
     Blueprint,
     render_template,
@@ -10,13 +11,15 @@ from flask import (
     jsonify,
 )
 from flask_login import login_user, logout_user, login_required, current_user
-from app import db
+from app import db, limiter
 from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory, LocationMapping
 from werkzeug.utils import secure_filename
 import os
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -353,6 +356,7 @@ def api_delete_art_image(image_id: int):
 
 
 @bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     """Admin login page."""
     if current_user.is_authenticated:
@@ -361,23 +365,20 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        print(f"DEBUG LOGIN: email={email}")
         
         user = User.query.filter_by(email=email).first()
-        print(f"DEBUG LOGIN: user found={user}")
         
         if user and user.check_password(password):
-            print("DEBUG LOGIN: password OK, logging in")
+            logger.info(f"Successful login for user: {email}")
             login_user(user, remember=True)
             from datetime import datetime
             user.last_login = datetime.utcnow()
             db.session.commit()
             
             next_page = request.args.get('next')
-            print(f"DEBUG LOGIN: redirecting to {next_page or 'index'}")
             return redirect(next_page or url_for('public.index'))
         else:
-            print(f"DEBUG LOGIN: FAILED - user={user}")
+            logger.warning(f"Failed login attempt for email: {email}")
             flash('Ungültige E-Mail oder Passwort.', 'error')
     
     return render_template('admin/login.html')
