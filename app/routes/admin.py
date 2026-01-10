@@ -97,6 +97,56 @@ def update_course_content(course_id: int):
     return {"success": True}
 
 
+@bp.route('/api/course', methods=['POST'])
+@login_required
+def api_create_course():
+    """Create a new course via form submission."""
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    date_str = request.form.get('date')
+    location = request.form.get('location', '').strip()
+    max_participants = request.form.get('max_participants')
+    is_active = bool(request.form.get('is_active'))
+    
+    if not title:
+        flash('Titel ist erforderlich.', 'error')
+        return redirect(url_for('courses.index'))
+    
+    image_file = request.files.get('image')
+    image_path = save_file(image_file, 'courses') if image_file and image_file.filename else None
+    
+    parsed_date = None
+    if date_str:
+        try:
+            parsed_date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            pass
+    
+    course = Course(
+        title=title,
+        description=description,
+        date=parsed_date,
+        location=location,
+        max_participants=int(max_participants) if max_participants else None,
+        is_active=is_active,
+        image_path=image_path,
+    )
+    db.session.add(course)
+    db.session.commit()
+    flash('Kurs wurde erstellt.', 'success')
+    return redirect(url_for('courses.index'))
+
+
+@bp.route('/api/course/<int:course_id>', methods=['DELETE'])
+@login_required
+def api_delete_course(course_id: int):
+    """Delete a course via AJAX."""
+    course = Course.query.get_or_404(course_id)
+    db.session.delete(course)
+    db.session.commit()
+    return {"success": True}
+
+
 @bp.route('/api/course/<int:course_id>/image', methods=['POST'])
 @login_required
 def update_course_image(course_id: int):
@@ -142,11 +192,94 @@ def update_art_category_image(category_id: int):
     return {"success": False, "message": "Kein Bild hochgeladen"}, 400
 
 
+@bp.route('/api/art-category', methods=['POST'])
+@login_required
+def api_create_art_category():
+    """Create a new art category via form submission."""
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    order = request.form.get('order', 0)
+    is_active = bool(request.form.get('is_active'))
+    
+    if not title:
+        flash('Titel ist erforderlich.', 'error')
+        return redirect(url_for('art.index'))
+    
+    featured_image = request.files.get('featured_image')
+    image_path = save_file(featured_image, 'art') if featured_image and featured_image.filename else None
+    
+    category = ArtCategory(
+        title=title,
+        description=description,
+        order=int(order) if order else 0,
+        is_active=is_active,
+        featured_image_path=image_path,
+    )
+    db.session.add(category)
+    db.session.commit()
+    flash('Kategorie wurde erstellt.', 'success')
+    return redirect(url_for('art.index'))
+
+
+@bp.route('/api/art-category/<int:category_id>', methods=['DELETE'])
+@login_required
+def api_delete_art_category(category_id: int):
+    """Delete an art category via AJAX."""
+    category = ArtCategory.query.get_or_404(category_id)
+    db.session.delete(category)
+    db.session.commit()
+    return {"success": True}
+
+
+@bp.route('/api/art-category/<int:category_id>/images', methods=['POST'])
+@login_required
+def api_upload_art_images(category_id: int):
+    """Upload one or more images to an art category."""
+    category = ArtCategory.query.get_or_404(category_id)
+    images = request.files.getlist('images')
+    caption = request.form.get('caption', '').strip()
+    
+    if not images:
+        flash('Keine Bilder ausgewählt.', 'error')
+        return redirect(url_for('art.gallery', category_id=category_id))
+    
+    uploaded_count = 0
+    max_order = db.session.query(db.func.max(ArtImage.order)).filter_by(category_id=category_id).scalar() or 0
+    
+    for image_file in images:
+        if image_file and image_file.filename:
+            saved = save_file(image_file, 'art')
+            if saved:
+                max_order += 1
+                art_image = ArtImage(
+                    category_id=category_id,
+                    image_path=saved,
+                    caption=caption if caption else None,
+                    order=max_order,
+                )
+                db.session.add(art_image)
+                uploaded_count += 1
+    
+    db.session.commit()
+    flash(f'{uploaded_count} Bild(er) hochgeladen.', 'success')
+    return redirect(url_for('art.gallery', category_id=category_id))
+
+
+@bp.route('/api/art-image/<int:image_id>', methods=['DELETE'])
+@login_required
+def api_delete_art_image(image_id: int):
+    """Delete an art image via AJAX."""
+    image = ArtImage.query.get_or_404(image_id)
+    db.session.delete(image)
+    db.session.commit()
+    return {"success": True}
+
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Admin login page."""
     if current_user.is_authenticated:
-        return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('public.index'))
     
     if request.method == 'POST':
         email = request.form.get('email')
@@ -161,7 +294,7 @@ def login():
             db.session.commit()
             
             next_page = request.args.get('next')
-            return redirect(next_page or url_for('admin.dashboard'))
+            return redirect(next_page or url_for('public.index'))
         else:
             flash('Ungültige E-Mail oder Passwort.', 'error')
     
@@ -180,11 +313,8 @@ def logout():
 @bp.route('/')
 @login_required
 def dashboard():
-    """Admin dashboard."""
-    # Statistics
-    total_courses = Course.query.count()
-    total_registrations = CourseRegistration.query.count()
-    active_courses = Course.query.filter_by(is_active=True).count()
+    """Redirect to homepage - admin functions are now in-place."""
+    return redirect(url_for('public.index'))
     recent_registrations = CourseRegistration.query.order_by(CourseRegistration.registered_at.desc()).limit(10).all()
     
     return render_template('admin/dashboard.html', 

@@ -7,7 +7,7 @@
     {% if page %}
         <!-- Kontakt Section -->
         <section class="kontakt-section">
-            <h1 class="editable-text" data-entity="page" data-entity-id="{{ page.id }}" data-field="title" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">Kontakt</h1>
+            <h1>Kontakt</h1>
             
             <div class="kontakt-content">
                 <div class="kontakt-image editable-image" data-entity="page" data-entity-id="{{ page.id }}" data-field="image" style="cursor: pointer;">
@@ -43,7 +43,7 @@
         
         <!-- Über mich Section -->
         <section class="ueber-mich-section">
-            <h2>Über mich</h2>
+            <h1 class="editable-text" data-entity="page" data-entity-id="{{ page.id }}" data-field="title" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">{{ page.title|safe }}</h1>
             
             <div class="ueber-mich-content editable-text" data-entity="page" data-entity-id="{{ page.id }}" data-field="content" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">
                 {{ page.content|safe }}

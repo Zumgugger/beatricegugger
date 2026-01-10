@@ -6,18 +6,71 @@
 <div class="art-page">
     <h1>Art</h1>
     
+    {% if current_user.is_authenticated %}
+    <div class="admin-controls">
+        <button class="btn btn-add" onclick="showNewCategoryForm()">+ Neue Kategorie</button>
+    </div>
+    
+    <!-- New Category Form (hidden by default) -->
+    <div id="new-category-form" class="new-item-form" style="display: none;">
+        <h3>Neue Kategorie erstellen</h3>
+        <form action="{{ url_for('admin.api_create_art_category') }}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="title">Titel *</label>
+                <input type="text" name="title" id="title" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Beschreibung</label>
+                <textarea name="description" id="description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="featured_image">Bild</label>
+                <input type="file" name="featured_image" id="featured_image" accept="image/*">
+            </div>
+            <div class="form-group">
+                <label for="order">Reihenfolge</label>
+                <input type="number" name="order" id="order" value="0" min="0">
+            </div>
+            <div class="form-group checkbox">
+                <label>
+                    <input type="checkbox" name="is_active" checked> Aktiv
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Erstellen</button>
+                <button type="button" class="btn btn-secondary" onclick="hideNewCategoryForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
     <div class="categories-grid">
         {% for category in categories %}
-        <div class="category-card">
-            {% if category.featured_image_path %}
-            <div class="category-image editable-image" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="image">
-                <img src="{{ url_for('uploaded_file', filename=category.featured_image_path) }}" alt="{{ category.title }}">
+        <div class="category-card" data-category-id="{{ category.id }}">
+            {% if current_user.is_authenticated %}
+            <div class="card-admin-controls">
+                <button class="btn-icon btn-delete" onclick="deleteCategory({{ category.id }}, '{{ category.title }}')" title="Kategorie löschen">🗑️</button>
             </div>
             {% endif %}
             
+            <div class="category-image {% if current_user.is_authenticated %}editable-image{% endif %}"
+                 {% if current_user.is_authenticated %}data-entity="art-category" data-entity-id="{{ category.id }}"{% endif %}>
+                {% if category.featured_image_path %}
+                <img src="{{ url_for('uploaded_file', filename=category.featured_image_path) }}" alt="{{ category.title }}">
+                {% else %}
+                <div class="image-placeholder">Bild hinzufügen</div>
+                {% endif %}
+            </div>
+            
             <div class="category-info">
-                <h2 class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="title" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">{{ category.title }}</h2>
-                <p class="editable-text" data-entity="art-category" data-entity-id="{{ category.id }}" data-field="description" contenteditable="{{ 'true' if current_user.is_authenticated else 'false' }}">{{ category.description }}</p>
+                <h2 class="{% if current_user.is_authenticated %}editable-text{% endif %}"
+                    {% if current_user.is_authenticated %}data-entity="art-category" data-entity-id="{{ category.id }}" data-field="title"{% endif %}>
+                    {{ category.title }}
+                </h2>
+                <p class="{% if current_user.is_authenticated %}editable-text{% endif %}"
+                   {% if current_user.is_authenticated %}data-entity="art-category" data-entity-id="{{ category.id }}" data-field="description"{% endif %}>
+                    {{ category.description }}
+                </p>
                 <a href="{{ url_for('art.gallery', category_id=category.id) }}" class="btn btn-primary">Galerie ansehen</a>
             </div>
         </div>
@@ -26,4 +79,34 @@
         {% endfor %}
     </div>
 </div>
+
+{% if current_user.is_authenticated %}
+<script>
+function showNewCategoryForm() {
+    document.getElementById('new-category-form').style.display = 'block';
+}
+
+function hideNewCategoryForm() {
+    document.getElementById('new-category-form').style.display = 'none';
+}
+
+async function deleteCategory(categoryId, categoryTitle) {
+    if (!confirm(`Kategorie "${categoryTitle}" wirklich löschen? Alle Bilder in dieser Kategorie werden ebenfalls gelöscht.`)) {
+        return;
+    }
+    try {
+        const resp = await fetch(`/admin/api/art-category/${categoryId}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            document.querySelector(`[data-category-id="${categoryId}"]`).remove();
+        } else {
+            alert(data.message || 'Fehler beim Löschen');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Fehler beim Löschen');
+    }
+}
+</script>
+{% endif %}
 {% endblock %}

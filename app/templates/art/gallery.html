@@ -10,6 +10,31 @@
     <p class="gallery-description">{{ category.description }}</p>
     {% endif %}
     
+    {% if current_user.is_authenticated %}
+    <div class="admin-controls">
+        <button class="btn btn-add" onclick="showImageUploadForm()">+ Bilder hinzufügen</button>
+    </div>
+    
+    <!-- Image Upload Form (hidden by default) -->
+    <div id="image-upload-form" class="new-item-form" style="display: none;">
+        <h3>Bilder hochladen</h3>
+        <form action="{{ url_for('admin.api_upload_art_images', category_id=category.id) }}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="images">Bilder auswählen (mehrere möglich)</label>
+                <input type="file" name="images" id="images" accept="image/*" multiple required>
+            </div>
+            <div class="form-group">
+                <label for="caption">Bildunterschrift (optional, für alle Bilder)</label>
+                <input type="text" name="caption" id="caption">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Hochladen</button>
+                <button type="button" class="btn btn-secondary" onclick="hideImageUploadForm()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
     <div class="gallery-container">
         {% if images %}
         <div class="gallery-viewer">
@@ -17,7 +42,10 @@
             
             <div class="gallery-images">
                 {% for image in images %}
-                <div class="gallery-image {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+                <div class="gallery-image {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}" data-image-id="{{ image.id }}">
+                    {% if current_user.is_authenticated %}
+                    <button class="btn-icon btn-delete gallery-delete" onclick="deleteImage({{ image.id }}, event)" title="Bild löschen">🗑️</button>
+                    {% endif %}
                     <img src="{{ url_for('uploaded_file', filename=image.image_path) }}" alt="{{ image.caption or category.title }}">
                     {% if image.caption %}
                     <p class="image-caption">{{ image.caption }}</p>
@@ -37,6 +65,38 @@
         {% endif %}
     </div>
 </div>
+
+{% if current_user.is_authenticated %}
+<script>
+function showImageUploadForm() {
+    document.getElementById('image-upload-form').style.display = 'block';
+}
+
+function hideImageUploadForm() {
+    document.getElementById('image-upload-form').style.display = 'none';
+}
+
+async function deleteImage(imageId, event) {
+    event.stopPropagation();
+    if (!confirm('Dieses Bild wirklich löschen?')) {
+        return;
+    }
+    try {
+        const resp = await fetch(`/admin/api/art-image/${imageId}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            // Reload page to update gallery
+            window.location.reload();
+        } else {
+            alert(data.message || 'Fehler beim Löschen');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Fehler beim Löschen');
+    }
+}
+</script>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
