@@ -2,10 +2,49 @@
 
 {% block title %}Home - Beatrice Gugger{% endblock %}
 
-{% block content %}
-<div class="landing-page">
-    <div class="header-content">
-        <h1>Willkommen</h1>
+{% block body_class %}homepage{% endblock %}
+
+{% block header %}
+<!-- Homepage has centered logo and large nav buttons -->
+<header class="homepage-header">
+    <div class="homepage-logo">
+        <a href="{{ url_for('public.index') }}">
+            <img src="{{ url_for('static', filename='images/Blumen und beatricegugger.png') }}" alt="Beatrice Gugger">
+        </a>
     </div>
-</div>
+
+    <nav class="homepage-nav">
+        <ul class="homepage-nav-menu">
+            {% if nav_items %}
+                {% for item in nav_items %}
+                <li>
+                    {% if item.slug == 'about-kontakt' %}
+                        {% set url = url_for('public.about_kontakt') %}
+                    {% elif item.slug == 'courses.index' or 'angebot' in item.slug.lower() %}
+                        {% set url = url_for('courses.index') %}
+                    {% elif item.slug == 'art' %}
+                        {% set url = url_for('art.index') %}
+                    {% else %}
+                        {% set url = '#' %}
+                    {% endif %}
+                    <a href="{{ url }}">
+                        {% if item.icon_path %}
+                        {% if item.icon_path.startswith('navigation/') or item.icon_path.startswith('uploads/') %}
+                        <img src="{{ url_for('uploaded_file', filename=item.icon_path.split('uploads/', 1)[-1]) if item.icon_path.startswith('uploads/') else url_for('uploaded_file', filename=item.icon_path) }}" alt="{{ item.title }}">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='images/' ~ item.icon_path) }}" alt="{{ item.title }}">
+                        {% endif %}
+                        {% else %}
+                        {{ item.title }}
+                        {% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            {% endif %}
+        </ul>
+    </nav>
+</header>
+{% endblock %}
+
+{% block content %}
 {% endblock %}
