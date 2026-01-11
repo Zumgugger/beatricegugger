@@ -178,12 +178,81 @@ fi
 
 echo ""
 echo "=========================================="
-echo -e "${GREEN}Deployment complete!${NC}"
+echo -e "${GREEN}Docker Deployment complete!${NC}"
+echo "=========================================="
 echo ""
-echo "Next steps:"
-echo "  1. Configure Apache reverse proxy"
-echo "  2. Set up SSL with Let's Encrypt"
-echo "  3. Configure firewall (allow 80, 443)"
+
+# Check if we're on the production server
+if [ -d "/etc/apache2" ]; then
+    echo "Detected Apache2 installation."
+    read -p "Set up Apache reverse proxy now? [y/N] " -n 1 -r
+    echo ""
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "Setting up Apache..."
+        
+        # Copy Apache config
+        APACHE_CONF="$SCRIPT_DIR/apache/beatricegugger.conf"
+        if [ -f "$APACHE_CONF" ]; then
+            sudo cp "$APACHE_CONF" /etc/apache2/sites-available/beatricegugger.conf
+            echo -e "${GREEN}✓${NC} Apache config copied"
+        fi
+        
+        # Enable required modules
+        sudo a2enmod proxy proxy_http headers rewrite ssl > /dev/null 2>&1
+        echo -e "${GREEN}✓${NC} Apache modules enabled"
+        
+        # Create challenge directory
+        sudo mkdir -p /var/www/html/.well-known/acme-challenge
+        echo -e "${GREEN}✓${NC} Let's Encrypt challenge directory created"
+        
+        # Enable site
+        sudo a2ensite beatricegugger.conf > /dev/null 2>&1
+        echo -e "${GREEN}✓${NC} Site enabled"
+        
+        # Test and reload
+        sudo apache2ctl configtest && sudo systemctl reload apache2
+        echo -e "${GREEN}✓${NC} Apache reloaded"
+        
+        echo ""
+        read -p "Set up SSL certificate now? [y/N] " -n 1 -r
+        echo ""
+        
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            if [ -f "$SCRIPT_DIR/setup-ssl.sh" ]; then
+                sudo bash "$SCRIPT_DIR/setup-ssl.sh"
+            else
+                echo "Running certbot..."
+                echo ""
+                echo "Choose method:"
+                echo "  1) HTTP challenge (if port 80 works)"
+                echo "  2) DNS challenge (more reliable)"
+                read -p "Select [1/2]: " SSL_METHOD
+                
+                if [ "$SSL_METHOD" = "2" ]; then
+                    sudo certbot certonly --manual --preferred-challenges dns \
+                        -d beatricegugger.ch -d www.beatricegugger.ch
+                else
+                    sudo certbot --apache -d beatricegugger.ch -d www.beatricegugger.ch
+                fi
+            fi
+        fi
+    fi
+fi
+
 echo ""
-echo "View logs: docker compose -f docker/docker-compose.yml logs -f"
+echo "=========================================="
+echo -e "${GREEN}All done!${NC}"
+echo "=========================================="
+echo ""
+echo "Your site should be available at:"
+echo "  http://beatricegugger.ch (or https if SSL was set up)"
+echo ""
+echo "Useful commands:"
+echo "  View logs:    docker compose -f $SCRIPT_DIR/docker-compose.yml logs -f"
+echo "  Restart app:  docker compose -f $SCRIPT_DIR/docker-compose.yml restart"
+echo "  Stop app:     docker compose -f $SCRIPT_DIR/docker-compose.yml down"
+echo ""
+echo "SSL renewal test: sudo certbot renew --dry-run"
 echo "=========================================="

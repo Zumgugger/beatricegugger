@@ -80,12 +80,13 @@ class ProductionConfig(Config):
     PREFERRED_URL_SCHEME = 'https'
     
     # In production, SECRET_KEY must be set via environment
-    @property
-    def SECRET_KEY(self):
-        key = os.environ.get('SECRET_KEY')
-        if not key or key == 'dev-secret-key-change-in-production':
+    # Note: Using class attribute, not @property (Flask can't handle property for SECRET_KEY)
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'CHANGE-THIS-IN-PRODUCTION'
+    
+    def __init__(self):
+        super().__init__()
+        if not self.SECRET_KEY or self.SECRET_KEY == 'CHANGE-THIS-IN-PRODUCTION':
             raise ValueError("Production SECRET_KEY must be set via environment variable!")
-        return key
 
 
 class TestingConfig(Config):
