@@ -5,14 +5,30 @@ from typing import Optional, Dict, Any
 from flask import current_app, url_for
 from flask_mail import Message
 from app import db, mail
-from app.models import MessageTemplate, MessageLog, ScheduledMessage, CourseRegistration, Course
+from app.models import MessageTemplate, MessageLog, ScheduledMessage, CourseRegistration, Course, SiteSettings
 
 logger = logging.getLogger(__name__)
 
 
+def is_sms_enabled():
+    """Check if SMS is enabled (both config and runtime setting)."""
+    # First check config - if disabled there, don't send
+    if not current_app.config.get('SMS_ENABLED'):
+        return False
+    
+    # Then check runtime setting from database
+    setting = SiteSettings.query.filter_by(key='sms_enabled').first()
+    if setting is not None:
+        return setting.value == 'true'
+    
+    # Default to enabled if no runtime setting exists
+    return True
+
+
 def get_twilio_client():
     """Get Twilio client if configured."""
-    if not current_app.config.get('SMS_ENABLED'):
+    if not is_sms_enabled():
+        logger.info("SMS disabled via settings")
         return None
     
     account_sid = current_app.config.get('TWILIO_ACCOUNT_SID')

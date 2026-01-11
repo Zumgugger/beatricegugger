@@ -20,6 +20,13 @@
                 <li><a href="{{ url_for('admin.dashboard') }}">Admin Panel</a></li>
                 <li><a href="{{ url_for('admin.message_templates') }}">SMS Vorlagen</a></li>
                 <li><a href="{{ url_for('admin.admin_users') }}">Admin Benutzer</a></li>
+                <li class="sms-toggle-item">
+                    <span class="sms-toggle-label">📱 SMS</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sms-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </li>
             </ul>
         </div>
     </div>
@@ -31,7 +38,46 @@
         .admin-dropdown-menu.show { display: block; }
         .admin-dropdown-menu li a { display: block; padding: 8px 15px; color: white; text-decoration: none; font-size: 0.85rem; }
         .admin-dropdown-menu li a:hover { background: #444; }
+        
+        /* SMS Toggle in dropdown */
+        .sms-toggle-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 15px; border-top: 1px solid #444; margin-top: 5px; }
+        .sms-toggle-label { color: white; font-size: 0.85rem; }
+        .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .3s; border-radius: 20px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        .toggle-switch input:checked + .toggle-slider { background-color: #27ae60; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+        .toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
     </style>
+    <script>
+        // SMS Toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const smsToggle = document.getElementById('sms-toggle');
+            if (smsToggle) {
+                // Load current status
+                fetch('/admin/api/sms-status')
+                    .then(r => r.json())
+                    .then(data => { smsToggle.checked = data.enabled; })
+                    .catch(err => console.error('SMS status error:', err));
+                
+                // Handle toggle change
+                smsToggle.addEventListener('change', function() {
+                    const enabled = this.checked;
+                    this.disabled = true;
+                    fetch('/admin/api/sms-toggle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ enabled: enabled })
+                    })
+                    .then(r => r.json())
+                    .then(data => { if (!data.success) this.checked = !enabled; })
+                    .catch(() => { this.checked = !enabled; })
+                    .finally(() => { this.disabled = false; });
+                });
+            }
+        });
+    </script>
     {% endif %}
     <div class="site-wrapper">
         {% block header %}

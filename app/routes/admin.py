@@ -13,7 +13,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, limiter
-from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory, LocationMapping, MessageTemplate
+from app.models import User, Course, CourseRegistration, ArtCategory, ArtImage, Page, NavigationItem, WorkshopCategory, LocationMapping, MessageTemplate, SiteSettings
 from app.services.messaging import send_promoted_message
 from werkzeug.utils import secure_filename
 import os
@@ -1321,3 +1321,37 @@ def api_save_location_mapping():
     
     db.session.commit()
     return jsonify({'success': True, 'message': 'Location mapping saved'})
+
+
+# ==================== SMS Settings ====================
+
+@bp.route('/api/sms-status')
+@login_required
+def api_sms_status():
+    """Get current SMS status."""
+    setting = SiteSettings.query.filter_by(key='sms_enabled').first()
+    # Default to True if not set (respects config setting)
+    if setting is None:
+        enabled = current_app.config.get('SMS_ENABLED', False)
+    else:
+        enabled = setting.value == 'true'
+    return jsonify({'enabled': enabled})
+
+
+@bp.route('/api/sms-toggle', methods=['POST'])
+@login_required
+def api_sms_toggle():
+    """Toggle SMS notifications on/off."""
+    data = request.get_json()
+    enabled = data.get('enabled', False)
+    
+    setting = SiteSettings.query.filter_by(key='sms_enabled').first()
+    if setting is None:
+        setting = SiteSettings(key='sms_enabled', value='true' if enabled else 'false')
+        db.session.add(setting)
+    else:
+        setting.value = 'true' if enabled else 'false'
+    
+    db.session.commit()
+    logger.info(f"SMS notifications {'enabled' if enabled else 'disabled'} by {current_user.email}")
+    return jsonify({'success': True, 'enabled': enabled})
