@@ -75,6 +75,14 @@ def register(course_id):
     """Handle course registration."""
     course = Course.query.get_or_404(course_id)
     
+    # Honeypot check - if filled, it's a bot
+    honeypot = request.form.get('website', '').strip()
+    if honeypot:
+        # Silently reject bot submissions - return success to not tip off the bot
+        logger.warning(f"Bot detected: honeypot field filled with '{honeypot}' for course {course_id}")
+        flash('Vielen Dank für Ihre Anmeldung!', 'success')
+        return redirect(url_for('courses.detail', course_id=course_id))
+    
     # Get form data
     vorname = request.form.get('vorname', '').strip()
     name = request.form.get('name', '').strip()

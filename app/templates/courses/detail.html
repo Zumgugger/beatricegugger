@@ -77,6 +77,12 @@
                 <input type="email" id="email" name="email">
             </div>
             
+            <!-- Honeypot field - hidden from humans, bots will fill it -->
+            <div class="form-group" style="position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden;" aria-hidden="true">
+                <label for="website">Website (leave empty)</label>
+                <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+            </div>
+            
             <button type="submit" class="btn btn-primary{% if course.is_full %} btn-waitlist{% endif %}">
                 {% if course.is_full %}Auf Warteliste setzen{% else %}Jetzt anmelden{% endif %}
             </button>
