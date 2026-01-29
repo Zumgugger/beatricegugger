@@ -5,6 +5,12 @@
     box-sizing: border-box;
 }
 
+html {
+    background-color: #f5efe6;
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior: none;
+}
+
 body {
     font-family: 'Courier Prime', sans-serif;
     font-size: 20px;
@@ -15,10 +21,35 @@ body {
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
+    min-height: 100vh;
+    overscroll-behavior: none;
 }
 
 /* Fix for iOS/Safari mobile background scrolling */
 @supports (-webkit-touch-callout: none) {
+    body {
+        background-attachment: scroll;
+        background-image: none;
+    }
+    
+    body::before {
+        content: '';
+        position: fixed;
+        top: -50px;
+        left: 0;
+        width: 100%;
+        height: calc(100% + 100px);
+        z-index: -1;
+        background-image: url('../images/Hintergrund Seidenpapier.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        pointer-events: none;
+    }
+}
+
+/* Additional mobile background fix */
+@media (max-width: 768px) {
     body {
         background-attachment: scroll;
     }
@@ -26,15 +57,17 @@ body {
     body::before {
         content: '';
         position: fixed;
-        top: 0;
+        top: -50px;
         left: 0;
         width: 100%;
-        height: 100%;
+        height: calc(100% + 100px);
         z-index: -1;
+        background-color: #f5efe6;
         background-image: url('../images/Hintergrund Seidenpapier.jpg');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
+        pointer-events: none;
     }
 }
 
@@ -278,7 +311,7 @@ body.homepage .footer {
    MOBILE RESPONSIVE
    ============================================ */
 @media (max-width: 768px) {
-    /* Subpage header mobile */
+    /* Subpage header mobile - use transform for better iOS fixed positioning */
     .site-header {
         padding: 10px 15px;
         position: fixed;
@@ -287,6 +320,10 @@ body.homepage .footer {
         right: 0;
         z-index: 1000;
         background: transparent;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
     }
     
     /* Admin bar adjustments for mobile */
@@ -312,6 +349,8 @@ body.homepage .footer {
         top: 15px;
         right: 15px;
         z-index: 1001;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
     }
     
     .site-header .nav-menu {
