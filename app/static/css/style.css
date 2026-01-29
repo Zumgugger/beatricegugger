@@ -7,8 +7,10 @@
 
 html {
     background-color: #f5efe6;
+    background-image: url('../images/Hintergrund Seidenpapier.jpg');
+    background-size: cover;
+    background-position: center;
     overflow-x: hidden;
-    overscroll-behavior: none;
 }
 
 body {
@@ -24,7 +26,6 @@ body {
     background-repeat: no-repeat;
     min-height: 100vh;
     overflow-x: hidden;
-    overscroll-behavior: none;
 }
 
 /* Custom cursor for clickable images */
