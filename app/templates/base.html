@@ -12,6 +12,9 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body data-is-admin="{% if current_user.is_authenticated %}1{% else %}0{% endif %}" class="{% if current_user.is_authenticated %}admin-logged-in {% endif %}{% block body_class %}{% endblock %}">
+    <!-- Fixed background for mobile -->
+    <div class="mobile-bg-fix"></div>
+    
     {% if current_user.is_authenticated %}
     <div class="admin-status-bar">
         Eingeloggt als Administrator
