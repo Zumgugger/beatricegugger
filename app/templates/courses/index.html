@@ -154,16 +154,100 @@ categoryImageInput.style.display = 'none';
 document.body.appendChild(categoryImageInput);
 let currentCategoryId = null;
 
+const WORKSHOP_MAX_WIDTH = 800;
+const WORKSHOP_MAX_HEIGHT = 800;
+const WORKSHOP_MAX_SIZE_KB = 300;
+
 function changeWorkshopCategoryImage(categoryId) {
     currentCategoryId = categoryId;
     categoryImageInput.click();
 }
 
-categoryImageInput.addEventListener('change', async () => {
-    if (!categoryImageInput.files.length || !currentCategoryId) return;
-    const file = categoryImageInput.files[0];
+// Image optimization using Canvas API
+async function optimizeWorkshopImage(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+            let newWidth = this.width;
+            let newHeight = this.height;
+            
+            if (newWidth > WORKSHOP_MAX_WIDTH || newHeight > WORKSHOP_MAX_HEIGHT) {
+                const ratio = Math.min(WORKSHOP_MAX_WIDTH / newWidth, WORKSHOP_MAX_HEIGHT / newHeight);
+                newWidth = Math.round(newWidth * ratio);
+                newHeight = Math.round(newHeight * ratio);
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            
+            const isPNG = file.type === 'image/png';
+            let hasTransparency = false;
+            if (isPNG) {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                for (let i = 3; i < imageData.data.length; i += 4) {
+                    if (imageData.data[i] < 255) { hasTransparency = true; break; }
+                }
+            }
+            
+            const outputType = hasTransparency ? 'image/png' : 'image/jpeg';
+            const quality = hasTransparency ? undefined : 0.85;
+            
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const ext = hasTransparency ? '.png' : '.jpg';
+                    const baseName = file.name.replace(/\.[^.]+$/, '');
+                    resolve({
+                        file: new File([blob], baseName + ext, { type: outputType }),
+                        originalSize: Math.round(file.size / 1024),
+                        newSize: Math.round(blob.size / 1024)
+                    });
+                } else {
+                    reject(new Error('Blob creation failed'));
+                }
+            }, outputType, quality);
+            
+            URL.revokeObjectURL(img.src);
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// Image size check helper for workshop category images
+async function checkWorkshopCategoryImageSize(file) {
+    const warnings = [];
+    const fileSizeKB = file.size / 1024;
+    
+    if (fileSizeKB > WORKSHOP_MAX_SIZE_KB) {
+        warnings.push(`Dateigrösse (${Math.round(fileSizeKB)} KB) überschreitet empfohlene ${WORKSHOP_MAX_SIZE_KB} KB`);
+    }
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+            if (this.width > WORKSHOP_MAX_WIDTH || this.height > WORKSHOP_MAX_HEIGHT) {
+                warnings.push(`Bildgrösse (${this.width}x${this.height}) überschreitet empfohlene ${WORKSHOP_MAX_WIDTH}x${WORKSHOP_MAX_HEIGHT} px`);
+            }
+            URL.revokeObjectURL(img.src);
+            resolve({
+                warnings,
+                actual: { width: this.width, height: this.height, sizeKB: Math.round(fileSizeKB) }
+            });
+        };
+        img.onerror = () => resolve({ warnings, actual: { sizeKB: Math.round(fileSizeKB) } });
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// Upload function
+async function uploadWorkshopImage(uploadFile) {
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', uploadFile);
     try {
         const resp = await fetch(`/admin/api/workshop-category/${currentCategoryId}/card-image`, { method: 'POST', body: formData });
         const data = await resp.json();
@@ -184,7 +268,85 @@ categoryImageInput.addEventListener('change', async () => {
         categoryImageInput.value = '';
         currentCategoryId = null;
     }
+}
+
+categoryImageInput.addEventListener('change', async () => {
+    if (!categoryImageInput.files.length || !currentCategoryId) return;
+    const file = categoryImageInput.files[0];
+    
+    // Check image size
+    const checkResult = await checkWorkshopCategoryImageSize(file);
+    
+    if (checkResult.warnings.length > 0) {
+        showWorkshopImageModal(file, checkResult);
+    } else {
+        uploadWorkshopImage(file);
+    }
 });
+
+function showWorkshopImageModal(file, checkResult) {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="workshop-image-modal-bg" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;">
+            <div style="background:#fff;padding:25px;border-radius:8px;max-width:500px;margin:20px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                <h3 style="margin:0 0 15px 0;color:#d4a012;">⚠️ Bild-Optimierung empfohlen</h3>
+                <p>Das Bild entspricht nicht den empfohlenen Standards:</p>
+                <ul style="margin:10px 0;padding-left:20px;color:#666;">
+                    ${checkResult.warnings.map(w => `<li>${w}</li>`).join('')}
+                </ul>
+                <div style="background:#f5f5f5;padding:12px;border-radius:4px;margin:15px 0;font-size:0.9em;line-height:1.6;">
+                    <strong>Aktuell:</strong> ${checkResult.actual.width}×${checkResult.actual.height} px, ${checkResult.actual.sizeKB} KB<br>
+                    <strong>Empfohlen:</strong> max. ${WORKSHOP_MAX_WIDTH}×${WORKSHOP_MAX_HEIGHT} px, max. ${WORKSHOP_MAX_SIZE_KB} KB
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;">
+                    <button id="btn-optimize" style="padding:10px 18px;background:#4a7c59;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">✨ Bild optimieren</button>
+                    <button id="btn-continue" style="padding:10px 18px;background:#d4a012;color:#fff;border:none;border-radius:4px;cursor:pointer;">Trotzdem hochladen</button>
+                    <button id="btn-cancel" style="padding:10px 18px;background:#666;color:#fff;border:none;border-radius:4px;cursor:pointer;">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    modal.querySelector('#btn-optimize').addEventListener('click', async function() {
+        this.textContent = '⏳ Optimiere...';
+        this.disabled = true;
+        modal.querySelector('#btn-continue').disabled = true;
+        
+        try {
+            const result = await optimizeWorkshopImage(file);
+            const savedPercent = Math.round((1 - result.newSize / result.originalSize) * 100);
+            modal.remove();
+            showFlashMessage(`✅ Optimiert: ${result.originalSize}KB → ${result.newSize}KB (-${savedPercent}%)`, 'success');
+            uploadWorkshopImage(result.file);
+        } catch (err) {
+            console.error('Optimization error:', err);
+            alert('Fehler bei der Optimierung: ' + err.message);
+            this.textContent = '✨ Bild optimieren';
+            this.disabled = false;
+            modal.querySelector('#btn-continue').disabled = false;
+        }
+    });
+    
+    modal.querySelector('#btn-continue').addEventListener('click', function() {
+        modal.remove();
+        uploadWorkshopImage(file);
+    });
+    
+    modal.querySelector('#btn-cancel').addEventListener('click', function() {
+        modal.remove();
+        categoryImageInput.value = '';
+        currentCategoryId = null;
+    });
+    
+    modal.querySelector('.workshop-image-modal-bg').addEventListener('click', function(e) {
+        if (e.target === this) {
+            modal.remove();
+            categoryImageInput.value = '';
+            currentCategoryId = null;
+        }
+    });
+}
 
 // Drag and drop for workshop categories
 function initCategoryDragDrop() {

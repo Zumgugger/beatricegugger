@@ -113,35 +113,219 @@ function changeArtCategoryImage(categoryId) {
     categoryImageInput.click();
 }
 
-categoryImageInput.addEventListener('change', async () => {
-    if (!categoryImageInput.files.length || !currentCategoryId) return;
-    const file = categoryImageInput.files[0];
-    const formData = new FormData();
-    formData.append('image', file);
-    try {
-        const resp = await fetch(`/admin/api/art-category/${currentCategoryId}/image`, { method: 'POST', body: formData });
-        const data = await resp.json();
-        if (data.success && data.image_path) {
-            const card = document.querySelector(`[data-category-id="${currentCategoryId}"]`);
-            const img = card.querySelector('.category-image img');
-            if (img) {
-                img.src = `/uploads/${data.image_path}?t=${Date.now()}`;
-            } else {
-                // If there was a placeholder, replace it with an img
-                const placeholder = card.querySelector('.image-placeholder');
-                if (placeholder) {
-                    placeholder.outerHTML = `<img src="/uploads/${data.image_path}?t=${Date.now()}" alt="">`;
-                }
+// Image optimization function using Canvas API
+async function optimizeArtCategoryImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+            // Calculate new dimensions maintaining aspect ratio
+            let { width, height } = this;
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
             }
-        } else {
-            alert(data.message || 'Fehler beim Hochladen');
+            
+            // Create canvas and draw resized image
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Check if image has transparency
+            const hasTransparency = checkArtCategoryCanvasTransparency(ctx, width, height);
+            const mimeType = hasTransparency ? 'image/png' : 'image/jpeg';
+            const extension = hasTransparency ? 'png' : 'jpg';
+            
+            // Convert to blob
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    // Create new file with optimized content
+                    const baseName = file.name.replace(/\.[^.]+$/, '');
+                    const newFile = new File([blob], `${baseName}_optimized.${extension}`, { type: mimeType });
+                    resolve({
+                        file: newFile,
+                        originalSize: file.size,
+                        newSize: blob.size,
+                        originalDimensions: { width: img.width, height: img.height },
+                        newDimensions: { width, height }
+                    });
+                } else {
+                    reject(new Error('Failed to create blob'));
+                }
+            }, mimeType, quality);
+            
+            URL.revokeObjectURL(img.src);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(img.src);
+            reject(new Error('Failed to load image'));
+        };
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// Check if canvas has any transparent pixels
+function checkArtCategoryCanvasTransparency(ctx, width, height) {
+    try {
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        for (let i = 3; i < data.length; i += 4) {
+            if (data[i] < 255) return true;
         }
-    } catch (err) {
-        console.error(err);
-        alert('Fehler beim Hochladen');
-    } finally {
-        categoryImageInput.value = '';
-        currentCategoryId = null;
+    } catch (e) {
+        console.warn('Could not check transparency:', e);
+    }
+    return false;
+}
+
+// Image size check helper for art category images
+async function checkArtCategoryImageSize(file) {
+    const maxWidth = 1200;
+    const maxHeight = 1200;
+    const maxSizeKB = 500;
+    const warnings = [];
+    let actualWidth = 0, actualHeight = 0;
+    
+    const fileSizeKB = file.size / 1024;
+    if (fileSizeKB > maxSizeKB) {
+        warnings.push(`Dateigrösse (${Math.round(fileSizeKB)} KB) überschreitet empfohlene ${maxSizeKB} KB`);
+    }
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+            actualWidth = this.width;
+            actualHeight = this.height;
+            if (this.width > maxWidth || this.height > maxHeight) {
+                warnings.push(`Bildgrösse (${this.width}x${this.height}) überschreitet empfohlene ${maxWidth}x${maxHeight} px`);
+            }
+            URL.revokeObjectURL(img.src);
+            resolve({ warnings, actualWidth, actualHeight });
+        };
+        img.onerror = () => resolve({ warnings, actualWidth: 0, actualHeight: 0 });
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// Show modal with optimize option
+function showArtCategoryImageModal(file, warnings, onOptimize, onContinue, onCancel) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('art-category-image-modal');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'art-category-image-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+    
+    modal.innerHTML = `
+        <div style="background:white;padding:30px;border-radius:12px;max-width:450px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <h3 style="margin:0 0 15px;color:#e67e22;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:28px;">⚠️</span> Bild-Optimierung empfohlen
+            </h3>
+            <div style="background:#fff3cd;padding:15px;border-radius:8px;margin-bottom:20px;border-left:4px solid #e67e22;">
+                ${warnings.map(w => `<p style="margin:5px 0;color:#856404;">• ${w}</p>`).join('')}
+            </div>
+            <p style="color:#666;margin-bottom:20px;font-size:14px;">
+                Das Bild kann automatisch für die Website optimiert werden (max. 1200×1200 px, komprimiert).
+            </p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="art-cat-modal-optimize" style="padding:12px 20px;background:#27ae60;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:15px;">
+                    ✨ Bild optimieren
+                </button>
+                <button id="art-cat-modal-continue" style="padding:10px 20px;background:#f39c12;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;">
+                    Trotzdem hochladen
+                </button>
+                <button id="art-cat-modal-cancel" style="padding:10px 20px;background:#95a5a6;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;">
+                    Abbrechen
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    document.getElementById('art-cat-modal-optimize').onclick = () => { modal.remove(); onOptimize(); };
+    document.getElementById('art-cat-modal-continue').onclick = () => { modal.remove(); onContinue(); };
+    document.getElementById('art-cat-modal-cancel').onclick = () => { modal.remove(); onCancel(); };
+    modal.onclick = (e) => { if (e.target === modal) { modal.remove(); onCancel(); } };
+}
+
+categoryImageInput.addEventListener('change', async () => {
+    console.log('Art category image change triggered');
+    if (!categoryImageInput.files.length || !currentCategoryId) {
+        console.log('No files or no currentCategoryId');
+        return;
+    }
+    const file = categoryImageInput.files[0];
+    console.log('File selected:', file.name, 'Size:', Math.round(file.size/1024), 'KB');
+    
+    // Check image size
+    const { warnings } = await checkArtCategoryImageSize(file);
+    console.log('Warnings:', warnings);
+    
+    async function uploadFile(fileToUpload, showSuccess = false) {
+        const formData = new FormData();
+        formData.append('image', fileToUpload);
+        try {
+            const resp = await fetch(`/admin/api/art-category/${currentCategoryId}/image`, { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (data.success && data.image_path) {
+                const card = document.querySelector(`[data-category-id="${currentCategoryId}"]`);
+                const img = card.querySelector('.category-image img');
+                if (img) {
+                    img.src = `/uploads/${data.image_path}?t=${Date.now()}`;
+                } else {
+                    const placeholder = card.querySelector('.image-placeholder');
+                    if (placeholder) {
+                        placeholder.outerHTML = `<img src="/uploads/${data.image_path}?t=${Date.now()}" alt="">`;
+                    }
+                }
+                if (showSuccess) {
+                    alert('✅ Bild wurde optimiert und hochgeladen!');
+                }
+            } else {
+                alert(data.message || 'Fehler beim Hochladen');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Fehler beim Hochladen');
+        } finally {
+            categoryImageInput.value = '';
+            currentCategoryId = null;
+        }
+    }
+    
+    if (warnings.length > 0) {
+        showArtCategoryImageModal(
+            file,
+            warnings,
+            // Optimize
+            async () => {
+                try {
+                    const result = await optimizeArtCategoryImage(file);
+                    const savedKB = Math.round((result.originalSize - result.newSize) / 1024);
+                    console.log(`Optimized: ${Math.round(result.originalSize/1024)}KB → ${Math.round(result.newSize/1024)}KB (saved ${savedKB}KB)`);
+                    await uploadFile(result.file, true);
+                } catch (err) {
+                    console.error('Optimization failed:', err);
+                    alert('Optimierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+                    categoryImageInput.value = '';
+                    currentCategoryId = null;
+                }
+            },
+            // Continue without optimization
+            () => uploadFile(file),
+            // Cancel
+            () => {
+                categoryImageInput.value = '';
+                currentCategoryId = null;
+            }
+        );
+    } else {
+        // Image is already small enough, upload directly
+        await uploadFile(file);
     }
 });
 

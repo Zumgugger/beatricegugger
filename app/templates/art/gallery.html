@@ -86,6 +86,200 @@ function hideImageUploadForm() {
     document.getElementById('image-upload-form').style.display = 'none';
 }
 
+// Image optimization function using Canvas API
+async function optimizeImageFile(file, maxWidth, maxHeight) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+            let newWidth = this.width;
+            let newHeight = this.height;
+            
+            if (newWidth > maxWidth || newHeight > maxHeight) {
+                const ratio = Math.min(maxWidth / newWidth, maxHeight / newHeight);
+                newWidth = Math.round(newWidth * ratio);
+                newHeight = Math.round(newHeight * ratio);
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            
+            // Check for transparency
+            const isPNG = file.type === 'image/png';
+            let hasTransparency = false;
+            if (isPNG) {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                for (let i = 3; i < imageData.data.length; i += 4) {
+                    if (imageData.data[i] < 255) { hasTransparency = true; break; }
+                }
+            }
+            
+            const outputType = hasTransparency ? 'image/png' : 'image/jpeg';
+            const quality = hasTransparency ? undefined : 0.85;
+            
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const ext = hasTransparency ? '.png' : '.jpg';
+                    const baseName = file.name.replace(/\.[^.]+$/, '');
+                    resolve(new File([blob], baseName + ext, { type: outputType }));
+                } else {
+                    reject(new Error('Blob creation failed'));
+                }
+            }, outputType, quality);
+            
+            URL.revokeObjectURL(img.src);
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// Check art images before form submission
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Gallery DOMContentLoaded fired');
+    const form = document.querySelector('#image-upload-form form');
+    const fileInput = document.getElementById('images');
+    
+    console.log('Form found:', !!form);
+    console.log('FileInput found:', !!fileInput);
+    
+    if (form && fileInput) {
+        form.addEventListener('submit', async function(e) {
+            // ALWAYS prevent default first, then decide what to do
+            e.preventDefault();
+            console.log('Form submit intercepted');
+            
+            const files = Array.from(fileInput.files);
+            console.log('Files count:', files.length);
+            if (!files.length) {
+                alert('Bitte wählen Sie mindestens ein Bild aus.');
+                return;
+            }
+            
+            const maxWidth = 1200;
+            const maxHeight = 1200;
+            const maxSizeKB = 500;
+            
+            // Check which files need optimization
+            const filesNeedingOptimization = [];
+            
+            for (const file of files) {
+                const fileSizeKB = file.size / 1024;
+                let needsOptimization = fileSizeKB > maxSizeKB;
+                
+                // Check dimensions
+                await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = function() {
+                        if (this.width > maxWidth || this.height > maxHeight) {
+                            needsOptimization = true;
+                        }
+                        URL.revokeObjectURL(img.src);
+                        resolve();
+                    };
+                    img.onerror = resolve;
+                    img.src = URL.createObjectURL(file);
+                });
+                
+                if (needsOptimization) {
+                    filesNeedingOptimization.push(file);
+                }
+            }
+            
+            if (filesNeedingOptimization.length > 0) {
+                console.log('Files needing optimization:', filesNeedingOptimization.length);
+                // Show custom modal with optimize option
+                showArtUploadModal(
+                    filesNeedingOptimization,
+                    files,
+                    maxWidth,
+                    maxHeight,
+                    form,
+                    fileInput
+                );
+            } else {
+                // No optimization needed, submit form directly
+                console.log('No optimization needed, submitting...');
+                // Use native submit to bypass our listener
+                form.removeEventListener('submit', arguments.callee);
+                form.submit();
+            }
+        });
+    }
+});
+
+function showArtUploadModal(filesNeedingOptimization, allFiles, maxWidth, maxHeight, form, fileInput) {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div class="art-upload-modal-bg" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;">
+            <div style="background:#fff;padding:25px;border-radius:8px;max-width:500px;margin:20px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                <h3 style="margin:0 0 15px 0;color:#d4a012;">⚠️ Bild-Optimierung empfohlen</h3>
+                <p>${filesNeedingOptimization.length} von ${allFiles.length} Bildern überschreiten die empfohlenen Standards (max. ${maxWidth}×${maxHeight}px, max. 500KB):</p>
+                <ul style="margin:10px 0;padding-left:20px;color:#666;max-height:150px;overflow-y:auto;">
+                    ${filesNeedingOptimization.slice(0, 5).map(f => `<li>${f.name} (${Math.round(f.size/1024)}KB)</li>`).join('')}
+                    ${filesNeedingOptimization.length > 5 ? `<li>... und ${filesNeedingOptimization.length - 5} weitere</li>` : ''}
+                </ul>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;">
+                    <button id="btn-optimize" style="padding:10px 18px;background:#4a7c59;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">✨ Alle optimieren</button>
+                    <button id="btn-continue" style="padding:10px 18px;background:#d4a012;color:#fff;border:none;border-radius:4px;cursor:pointer;">Trotzdem hochladen</button>
+                    <button id="btn-cancel" style="padding:10px 18px;background:#666;color:#fff;border:none;border-radius:4px;cursor:pointer;">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    modal.querySelector('#btn-optimize').addEventListener('click', async function() {
+        this.textContent = '⏳ Optimiere...';
+        this.disabled = true;
+        modal.querySelector('#btn-continue').disabled = true;
+        
+        try {
+            // Optimize all files that need it
+            const optimizedFiles = [];
+            for (const file of allFiles) {
+                if (filesNeedingOptimization.includes(file)) {
+                    const optimized = await optimizeImageFile(file, maxWidth, maxHeight);
+                    optimizedFiles.push(optimized);
+                } else {
+                    optimizedFiles.push(file);
+                }
+            }
+            
+            // Create new FileList-like DataTransfer object
+            const dt = new DataTransfer();
+            optimizedFiles.forEach(f => dt.items.add(f));
+            fileInput.files = dt.files;
+            
+            modal.remove();
+            form.submit();
+        } catch (err) {
+            console.error('Optimization error:', err);
+            alert('Fehler bei der Optimierung: ' + err.message);
+            this.textContent = '✨ Alle optimieren';
+            this.disabled = false;
+            modal.querySelector('#btn-continue').disabled = false;
+        }
+    });
+    
+    modal.querySelector('#btn-continue').addEventListener('click', function() {
+        modal.remove();
+        form.submit();
+    });
+    
+    modal.querySelector('#btn-cancel').addEventListener('click', function() {
+        modal.remove();
+    });
+    
+    modal.querySelector('.art-upload-modal-bg').addEventListener('click', function(e) {
+        if (e.target === this) modal.remove();
+    });
+}
+
 async function deleteImage(imageId, event) {
     event.stopPropagation();
     if (!confirm('Dieses Bild wirklich löschen?')) {
