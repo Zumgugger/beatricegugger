@@ -314,6 +314,7 @@ body.homepage .footer {
     /* Subpage header mobile - use transform for better iOS fixed positioning */
     .site-header {
         padding: 10px 15px;
+        padding-top: calc(10px + env(safe-area-inset-top, 0px));
         position: fixed;
         top: 0;
         left: 0;
