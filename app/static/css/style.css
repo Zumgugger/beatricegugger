@@ -7,8 +7,6 @@
 
 html {
     background-color: #f5efe6;
-    /* Prevent overscroll bounce on iOS */
-    overscroll-behavior: none;
     overflow-x: hidden;
 }
 
@@ -22,27 +20,9 @@ body {
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
+    background-repeat: no-repeat;
     min-height: 100vh;
-    overscroll-behavior: none;
     overflow-x: hidden;
-}
-
-/* Fix for iOS/Safari mobile background scrolling */
-@supports (-webkit-touch-callout: none) {
-    body {
-        background-attachment: scroll;
-        background-size: auto 100vh;
-        background-repeat: no-repeat;
-    }
-}
-
-/* Mobile background - use scroll instead of fixed, don't stretch */
-@media (max-width: 768px) {
-    body {
-        background-attachment: scroll;
-        background-size: auto 100vh;
-        background-repeat: no-repeat;
-    }
 }
 
 /* Custom cursor for clickable images */
