@@ -32,37 +32,10 @@ body {
     }
 }
 
-/* Mobile background fix - keep background but allow scroll behavior */
+/* Mobile background - use scroll instead of fixed */
 @media (max-width: 768px) {
     body {
         background-attachment: scroll;
-    }
-}
-
-/* Fixed background layer for mobile */
-.mobile-bg-fix {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .mobile-bg-fix {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        background-color: #f5efe6;
-        background-image: url('../images/Hintergrund Seidenpapier.jpg');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        pointer-events: none;
-    }
-    
-    body {
-        background-image: none;
     }
 }
 
