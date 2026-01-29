@@ -8,6 +8,7 @@
 html {
     background-color: #f5efe6;
     overflow-x: hidden;
+    overscroll-behavior: none;
 }
 
 body {
@@ -23,6 +24,7 @@ body {
     background-repeat: no-repeat;
     min-height: 100vh;
     overflow-x: hidden;
+    overscroll-behavior: none;
 }
 
 /* Custom cursor for clickable images */
