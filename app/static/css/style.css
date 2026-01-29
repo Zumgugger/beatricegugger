@@ -35,11 +35,12 @@ body {
     body::before {
         content: '';
         position: fixed;
-        top: -50px;
+        top: 0;
         left: 0;
         width: 100%;
-        height: calc(100% + 100px);
+        height: 100%;
         z-index: -1;
+        background-color: #f5efe6;
         background-image: url('../images/Hintergrund Seidenpapier.jpg');
         background-size: cover;
         background-position: center;
@@ -52,15 +53,16 @@ body {
 @media (max-width: 768px) {
     body {
         background-attachment: scroll;
+        background-image: none;
     }
     
     body::before {
         content: '';
         position: fixed;
-        top: -50px;
+        top: 0;
         left: 0;
         width: 100%;
-        height: calc(100% + 100px);
+        height: 100%;
         z-index: -1;
         background-color: #f5efe6;
         background-image: url('../images/Hintergrund Seidenpapier.jpg');
