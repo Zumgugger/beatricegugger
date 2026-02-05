@@ -31,9 +31,6 @@
         <p><strong>Ort:</strong> {{ course.location }}</p>
         {% endif %}
         
-        {% if course.max_participants %}
-        <p><strong>Teilnehmer:</strong> {{ course.registration_count }} / {{ course.max_participants }}</p>
-        {% endif %}
     </div>
     
     {% if course.is_full %}
